@@ -38,15 +38,22 @@ const getSession = async (req, res, next) => {
     const session = await ChatSession.findOne({
       _id: req.params.id,
       user: req.userId,
-    }).populate({
-      path: 'messages',
-      options: { sort: { createdAt: 1 } },
     });
 
     if (!session) {
       return res.status(404).json({ message: 'Session not found' });
     }
-    res.status(200).json(session);
+
+    // Fetch all messages for this session, sorted by createdAt ascending
+    const messages = await Message.find({ chatSession: session._id }).sort({ createdAt: 1 });
+
+    // Combine session with messages
+    const sessionWithMessages = {
+      ...session.toObject(),
+      messages: messages
+    };
+
+    res.status(200).json(sessionWithMessages);
   } catch (error) {
     next(error);
   }
