@@ -4,7 +4,7 @@ const validateEnv = () => {
   const schema = Joi.object({
     PORT: Joi.number().default(5000),
     MONGODB_URI: Joi.string().required(),
-    OPENAI_API_KEY: Joi.string().required(),
+    GEMINI_API_KEY: Joi.string().required(),
     NODE_ENV: Joi.string().valid('development', 'production', 'test').default('development'),
   });
 

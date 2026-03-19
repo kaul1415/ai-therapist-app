@@ -1,8 +1,13 @@
-const OpenAI = require('openai');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { SYSTEM_PROMPT } = require('../utils/therapistPrompt');
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const model = genAI.getGenerativeModel({ 
+  model: 'gemini-1.5-flash',
+  generationConfig: {
+    temperature: 0.7,
+    maxOutputTokens: 500,
+  }
 });
 
 const getTherapistResponse = async (userMessage, conversationHistory = []) => {
@@ -11,28 +16,27 @@ const getTherapistResponse = async (userMessage, conversationHistory = []) => {
       throw new Error('Invalid user message');
     }
 
-    const limitedHistory = conversationHistory.slice(-6);
+    // Build conversation string: system prompt + history + current message
+    let conversationString = SYSTEM_PROMPT + "\n\n";
 
-    const messages = [
-      { role: 'system', content: SYSTEM_PROMPT },
-      ...limitedHistory,
-      { role: 'user', content: userMessage }
-    ];
+    // Add conversation history
+    for (const msg of conversationHistory) {
+      const role = msg.role === 'user' ? 'User' : 'Assistant';
+      conversationString += `${role}: ${msg.content}\n`;
+    }
 
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: messages,
-      temperature: 0.7,
-      max_tokens: 500,
-      presence_penalty: 0.6,
-      frequency_penalty: 0.3,
-    });
+    // Add current user message
+    conversationString += `User: ${userMessage}\n`;
+    conversationString += `Assistant:`;
 
-    return completion.choices[0].message.content.trim();
+    const result = await model.generateContent(conversationString);
+    const response = await result.response;
+    const text = response.text();
+    
+    return text.trim();
 
   } catch (error) {
-    console.error('OpenAI API error:', error);
-
+    console.error('Gemini API error:', error);
     return "I'm here to listen, but I'm having trouble responding right now. If you're feeling overwhelmed, please consider reaching out to someone you trust or a professional.";
   }
 };
