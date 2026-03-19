@@ -7,24 +7,33 @@ const openai = new OpenAI({
 
 const getTherapistResponse = async (userMessage, conversationHistory = []) => {
   try {
-    // Build messages array with system prompt, conversation history, and current user message
+    if (!userMessage || typeof userMessage !== 'string') {
+      throw new Error('Invalid user message');
+    }
+
+    const limitedHistory = conversationHistory.slice(-6);
+
     const messages = [
       { role: 'system', content: SYSTEM_PROMPT },
-      ...conversationHistory,
+      ...limitedHistory,
       { role: 'user', content: userMessage }
     ];
 
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4', // or 'gpt-3.5-turbo' for cost savings
+      model: 'gpt-4o-mini',
       messages: messages,
       temperature: 0.7,
       max_tokens: 500,
+      presence_penalty: 0.6,
+      frequency_penalty: 0.3,
     });
 
     return completion.choices[0].message.content.trim();
+
   } catch (error) {
     console.error('OpenAI API error:', error);
-    throw new Error('Failed to get AI response');
+
+    return "I'm here to listen, but I'm having trouble responding right now. If you're feeling overwhelmed, please consider reaching out to someone you trust or a professional.";
   }
 };
 
