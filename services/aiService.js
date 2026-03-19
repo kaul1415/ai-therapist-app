@@ -16,20 +16,20 @@ const getTherapistResponse = async (userMessage, conversationHistory = []) => {
       throw new Error('Invalid user message');
     }
 
-    // Build conversation string: system prompt + history + current message
-    let conversationString = SYSTEM_PROMPT + "\n\n";
+    // Build a well-structured conversation prompt
+    let prompt = `System: ${SYSTEM_PROMPT}\n\n`;
+    prompt += `Conversation History:\n`;
 
-    // Add conversation history
+    // Add conversation history with clear role labels
     for (const msg of conversationHistory) {
-      const role = msg.role === 'user' ? 'User' : 'Assistant';
-      conversationString += `${role}: ${msg.content}\n`;
+      const role = msg.role === 'user' ? 'User' : 'Therapist';
+      prompt += `${role}: ${msg.content}\n`;
     }
 
-    // Add current user message
-    conversationString += `User: ${userMessage}\n`;
-    conversationString += `Assistant:`;
+    prompt += `\nUser: ${userMessage}\n`;
+    prompt += `Therapist:`;
 
-    const result = await model.generateContent(conversationString);
+    const result = await model.generateContent(prompt);
     const response = await result.response;
     const text = response.text();
     
