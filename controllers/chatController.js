@@ -60,7 +60,12 @@ const sendMessage = async (req, res, next) => {
     const { content } = req.body;
     const sessionId = req.params.id;
 
-    // Verify session belongs to user
+    // ✅ 1. Validate input
+    if (!content || typeof content !== 'string') {
+      return res.status(400).json({ message: 'Invalid message' });
+    }
+
+    // ✅ 2. Check session ownership
     const session = await ChatSession.findOne({
       _id: sessionId,
       user: req.userId,
@@ -70,43 +75,66 @@ const sendMessage = async (req, res, next) => {
       return res.status(404).json({ message: 'Session not found' });
     }
 
-    // Save user message
+    // ✅ 3. Save user message
     const userMessage = await Message.create({
       chatSession: sessionId,
       sender: 'user',
       content,
     });
 
-    // Fetch all previous messages for this session to build conversation history
-    const previousMessages = await Message.find({ 
+    // ✅ 4. Fetch limited previous messages (last 6)
+    const previousMessages = await Message.find({
       chatSession: sessionId,
-      _id: { $ne: userMessage._id } // Exclude the current message we just saved
-    }).sort({ createdAt: 1 });
+      _id: { $ne: userMessage._id }
+    })
+      .sort({ createdAt: -1 })
+      .limit(6);
 
-    // Build conversation history array for OpenAI
-    const conversationHistory = previousMessages.map(msg => ({
+    // Reverse to correct order (old → new)
+    const orderedMessages = previousMessages.reverse();
+
+    // ✅ 5. Format conversation history for AI
+    const conversationHistory = orderedMessages.map(msg => ({
       role: msg.sender === 'user' ? 'user' : 'assistant',
-      content: msg.content
+      content: msg.content,
     }));
 
-    // Get AI response with conversation history
-    const aiResponse = await aiService.getTherapistResponse(content, conversationHistory);
+    // ✅ 6. Get AI response (with safety fallback)
+    let aiResponse;
 
-    // Save AI message
+    try {
+      aiResponse = await aiService.getTherapistResponse(
+        content,
+        conversationHistory
+      );
+    } catch (error) {
+      console.error('AI Error:', error);
+
+      aiResponse =
+        "I'm here to listen. I'm having trouble responding right now, but you're not alone. Please consider talking to someone you trust.";
+    }
+
+    // ✅ 7. Save AI message
     const aiMessage = await Message.create({
       chatSession: sessionId,
-      sender: 'ai',
+      sender: 'assistant', // better naming than 'ai'
       content: aiResponse,
     });
 
-    // Update session's last activity
+    // ✅ 8. Update session activity
     session.isActive = true;
+    session.updatedAt = new Date();
     await session.save();
 
+    // ✅ 9. Send response
     res.status(201).json({
-      userMessage,
-      aiMessage,
+      success: true,
+      data: {
+        userMessage,
+        aiMessage,
+      },
     });
+
   } catch (error) {
     next(error);
   }
