@@ -1,5 +1,5 @@
 const OpenAI = require('openai');
-const { SYSTEM_PROMPT } = require('./therapistPrompt');
+const { SYSTEM_PROMPT } = require('../utils/therapistPrompt');
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
