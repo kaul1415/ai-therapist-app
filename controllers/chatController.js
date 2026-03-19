@@ -77,8 +77,20 @@ const sendMessage = async (req, res, next) => {
       content,
     });
 
-    // Get AI response
-    const aiResponse = await aiService.getTherapistResponse(content, sessionId);
+    // Fetch all previous messages for this session to build conversation history
+    const previousMessages = await Message.find({ 
+      chatSession: sessionId,
+      _id: { $ne: userMessage._id } // Exclude the current message we just saved
+    }).sort({ createdAt: 1 });
+
+    // Build conversation history array for OpenAI
+    const conversationHistory = previousMessages.map(msg => ({
+      role: msg.sender === 'user' ? 'user' : 'assistant',
+      content: msg.content
+    }));
+
+    // Get AI response with conversation history
+    const aiResponse = await aiService.getTherapistResponse(content, conversationHistory);
 
     // Save AI message
     const aiMessage = await Message.create({
@@ -87,7 +99,7 @@ const sendMessage = async (req, res, next) => {
       content: aiResponse,
     });
 
-    // Update session's last activity (optional)
+    // Update session's last activity
     session.isActive = true;
     await session.save();
 
