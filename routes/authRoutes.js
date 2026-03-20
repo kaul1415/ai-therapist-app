@@ -4,6 +4,10 @@ const { body } = require('express-validator');
 const authController = require('../controllers/authController');
 const auth = require('../middleware/auth');
 
+router.get('/test', (req, res) => {
+  res.json({ message: "Auth route working" });
+});
+
 // Validation schemas
 const registerValidation = [
   body('name').notEmpty().withMessage('Name is required'),

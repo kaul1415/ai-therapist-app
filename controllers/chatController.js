@@ -66,7 +66,7 @@ const getSession = async (req, res, next) => {
 const sendMessage = async (req, res, next) => {
   console.log('chatController.sendMessage hit');
   try {
-    const { content } = req.body;
+    const content = req.body.content || req.body.message;
     const sessionId = req.params.id;
 
     // Validate input

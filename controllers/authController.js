@@ -4,7 +4,7 @@ const { validationResult } = require('express-validator');
 
 const generateToken = (userId) => {
   return jwt.sign({ userId }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRE,
+    expiresIn: process.env.JWT_EXPIRE || '1d',
   });
 };
 
