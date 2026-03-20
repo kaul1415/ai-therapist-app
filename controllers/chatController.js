@@ -6,6 +6,7 @@ const aiService = require('../services/aiService');
 // @route   POST /api/chat/sessions
 // @access  Public
 const createSession = async (req, res, next) => {
+  console.log('chatController.createSession hit');
   try {
     const { title } = req.body;
     const session = await ChatSession.create({
@@ -21,6 +22,7 @@ const createSession = async (req, res, next) => {
 // @route   GET /api/chat/sessions
 // @access  Public
 const getSessions = async (req, res, next) => {
+  console.log('chatController.getSessions hit');
   try {
     const sessions = await ChatSession.find({}).sort({ createdAt: -1 });
     res.status(200).json(sessions);
@@ -33,6 +35,7 @@ const getSessions = async (req, res, next) => {
 // @route   GET /api/chat/sessions/:id
 // @access  Public
 const getSession = async (req, res, next) => {
+  console.log('chatController.getSession hit');
   try {
     const session = await ChatSession.findOne({
       _id: req.params.id,
@@ -61,6 +64,7 @@ const getSession = async (req, res, next) => {
 // @route   POST /api/chat/sessions/:id/messages
 // @access  Public
 const sendMessage = async (req, res, next) => {
+  console.log('chatController.sendMessage hit');
   try {
     const { content } = req.body;
     const sessionId = req.params.id;
@@ -145,6 +149,7 @@ const sendMessage = async (req, res, next) => {
 // @route   DELETE /api/chat/sessions/:id
 // @access  Public
 const deleteSession = async (req, res, next) => {
+  console.log('chatController.deleteSession hit');
   try {
     const session = await ChatSession.findOneAndDelete({
       _id: req.params.id,

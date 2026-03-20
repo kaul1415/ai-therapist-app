@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { body } = require('express-validator');
 const authController = require('../controllers/authController');
+const auth = require('../middleware/auth');
 
 // Validation schemas
 const registerValidation = [
@@ -17,6 +18,6 @@ const loginValidation = [
 
 router.post('/register', registerValidation, authController.register);
 router.post('/login', loginValidation, authController.login);
-router.get('/profile', authController.getProfile);
+router.get('/profile', auth, authController.getProfile);
 
 module.exports = router;

@@ -30,7 +30,8 @@ app.use(morgan('dev'));
 
 // Routes
 app.get('/api', (req, res) => {
-  res.send('API is working 🚀');
+  console.log('GET /api hit');
+  res.status(200).json({ message: 'API is working' });
 });
 app.use('/api', apiRoutes);
 

@@ -12,6 +12,7 @@ const generateToken = (userId) => {
 // @route   POST /api/auth/register
 // @access  Public
 const register = async (req, res, next) => {
+  console.log('authController.register hit');
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -49,6 +50,7 @@ const register = async (req, res, next) => {
 // @route   POST /api/auth/login
 // @access  Public
 const login = async (req, res, next) => {
+  console.log('authController.login hit');
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -85,6 +87,7 @@ const login = async (req, res, next) => {
 // @route   GET /api/auth/profile
 // @access  Private
 const getProfile = async (req, res, next) => {
+  console.log('authController.getProfile hit');
   try {
     const user = await User.findById(req.userId);
     if (!user) {

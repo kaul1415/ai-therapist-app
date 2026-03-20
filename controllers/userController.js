@@ -4,6 +4,7 @@ const User = require('../models/User');
 // @route   GET /api/users/profile
 // @access  Private
 const getProfile = async (req, res, next) => {
+  console.log('userController.getProfile hit');
   try {
     const user = await User.findById(req.userId);
     if (!user) {
@@ -19,6 +20,7 @@ const getProfile = async (req, res, next) => {
 // @route   PUT /api/users/profile
 // @access  Private
 const updateProfile = async (req, res, next) => {
+  console.log('userController.updateProfile hit');
   try {
     const { name, email } = req.body;
     const user = await User.findByIdAndUpdate(
