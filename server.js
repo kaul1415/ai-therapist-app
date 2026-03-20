@@ -1,10 +1,8 @@
+require('dotenv').config(); // Loads variables from .env
 const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const morgan = require('morgan');
-
-// Load environment variables
-dotenv.config();
 
 // Import config
 const { connectDB } = require('./config/database');
@@ -17,6 +15,7 @@ const errorHandler = require('./middleware/errorHandler');
 const apiRoutes = require('./routes');
 
 // Validate environment variables
+console.log('TEST .env:', process.env.MONGODB_URI);
 validateEnv();
 
 // Connect to database
@@ -30,6 +29,9 @@ app.use(express.json());
 app.use(morgan('dev'));
 
 // Routes
+app.get('/api', (req, res) => {
+  res.send('API is working 🚀');
+});
 app.use('/api', apiRoutes);
 
 // Error handling middleware
