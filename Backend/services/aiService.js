@@ -1,5 +1,5 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
-const { SYSTEM_PROMPT } = require('../utils/therapistPrompt');
+const { SYSTEM_PROMPT: BASE_SYSTEM_PROMPT } = require('../utils/therapistPrompt');
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({
@@ -16,6 +16,22 @@ const getTherapistResponse = async (userMessage, conversationHistory = []) => {
       throw new Error('Invalid user message');
     }
 
+    // Intent detection
+    const lowerMessage = userMessage.toLowerCase();
+    let mode = 'emotional support'; // default mode
+    if (/\b(how|guide|help|steps)\b/.test(lowerMessage)) {
+      mode = 'guidance';
+    } else if (/\b(advice|suggest|recommend)\b/.test(lowerMessage)) {
+      mode = 'advice';
+    }
+
+    // Mode-specific instructions
+    const modeInstructions = {
+      'emotional support': `You are an empathetic therapist. Your primary goal is to provide emotional support, validation, and active listening. Listen carefully and reflect the user's feelings. Do not give advice unless explicitly asked.`,
+      'guidance': `You are a guide. Your primary goal is to provide clear, step-by-step instructions. Break down complex processes into simple, actionable steps. Be patient and thorough.`,
+      'advice': `You are an advisor. Your primary goal is to provide practical, actionable suggestions. Be concise and direct. Focus on solutions.`
+    };
+
     // Build history properly
     const formattedHistory = conversationHistory?.length
       ? conversationHistory
@@ -25,7 +41,9 @@ const getTherapistResponse = async (userMessage, conversationHistory = []) => {
 
     // Single clean prompt (NO duplication)
     const prompt = `
-${SYSTEM_PROMPT}
+${modeInstructions[mode]}
+
+${BASE_SYSTEM_PROMPT}
 
 Conversation:
 ${formattedHistory}
