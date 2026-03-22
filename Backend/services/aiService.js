@@ -1,5 +1,4 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
-const { SYSTEM_PROMPT: BASE_SYSTEM_PROMPT } = require('../utils/therapistPrompt');
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({
@@ -16,49 +15,69 @@ const getTherapistResponse = async (userMessage, conversationHistory = []) => {
       throw new Error('Invalid user message');
     }
 
-    // Intent detection with improved patterns
-    const lowerMessage = userMessage.toLowerCase();
-    let mode = 'emotional support'; // default mode
+    // Intent detection
+    const lowerMessage = userMessage.toLowerCase().trim();
+    let mode = 'emotional support'; // default
 
-    // Guidance mode: user asks for instructions, steps, or help with a task
-    if (/(how to|how do i|guide|steps|step by step|procedure|process|tutorial|instructions|learn|teach|show me|explain how)\b/.test(lowerMessage) ||
-        /^(help|how|guide|steps)\b/.test(lowerMessage)) {
+    // Define keyword patterns
+    const guidancePatterns = [
+      /\b(how to|how do i|guide|steps|step by step|procedure|process|tutorial|instructions|learn|teach|show me|explain how)\b/,
+      /^(help|how|guide|steps)\b/,
+      /\b(walk me through|take me through|demonstrate)\b/
+    ];
+    const advicePatterns = [
+      /\b(advice|suggest|recommend|tip|suggestion|recommendation)\b/,
+      /\b(what should i|what can i do|what would you do)\b/
+    ];
+
+    if (guidancePatterns.some(pattern => pattern.test(lowerMessage))) {
       mode = 'guidance';
-    } 
-    // Advice mode: user asks for suggestions or recommendations
-    else if (/\b(advice|suggest|recommend|tip|suggestion)\b/.test(lowerMessage)) {
+    } else if (advicePatterns.some(pattern => pattern.test(lowerMessage))) {
       mode = 'advice';
     }
 
-    // Mode-specific instructions
-    const modeInstructions = {
-      'emotional support': `You are an empathetic therapist. Your primary goal is to provide emotional support, validation, and active listening. Listen carefully and reflect the user's feelings. Do not give advice unless explicitly asked.`,
-      'guidance': `You are a guide. Your primary goal is to provide clear, step-by-step instructions. Break down complex processes into simple, actionable steps. Be patient and thorough. IMPORTANT: Format your response as a numbered list of steps. Each step should be concise and actionable.`,
-      'advice': `You are an advisor. Your primary goal is to provide practical, actionable suggestions. Be concise and direct. Focus on solutions.`
-    };
-
-    // Build history properly
-    const formattedHistory = conversationHistory?.length
+    // Build conversation history string
+    const formattedHistory = Array.isArray(conversationHistory) && conversationHistory.length
       ? conversationHistory
         .map(msg => `${msg.role === 'user' ? 'User' : 'Therapist'}: ${msg.content}`)
         .join('\n')
       : 'No previous conversation.';
 
-    // Single clean prompt (NO duplication)
-    const prompt = `
-${modeInstructions[mode]}
+    // Construct mode-specific system prompt
+    let systemPrompt = '';
+    switch (mode) {
+      case 'emotional support':
+        systemPrompt = `You are an empathetic therapist. Your primary goal is to provide emotional support, validation, and active listening. Listen carefully and reflect the user's feelings. Do not give advice unless explicitly asked. Be warm, supportive, and understanding.`;
+        break;
+      case 'guidance':
+        systemPrompt = `You are a patient guide. Your primary goal is to provide clear, step-by-step instructions. Break down complex processes into simple, actionable steps. Number each step clearly (e.g., 1., 2., 3.). Be thorough and ensure each step is easy to follow. Maintain a supportive tone.`;
+        break;
+      case 'advice':
+        systemPrompt = `You are a practical advisor. Your primary goal is to provide concise, actionable suggestions. Focus on solutions and be direct. Offer specific tips or recommendations that the user can implement immediately. Ensure advice is given with empathy and without judgment.`;
+        break;
+    }
 
-${BASE_SYSTEM_PROMPT}
+    // Add common therapist principles
+    const commonPrinciples = `
+General guidelines:
+- Always maintain a supportive and non-judgmental attitude.
+- Use simple, clear language.
+- If the user appears to be in emotional distress, prioritize emotional support over guidance or advice.
+- Respect privacy and confidentiality.`;
 
-Conversation:
+    const fullSystemPrompt = systemPrompt + commonPrinciples;
+
+    // Build the final prompt
+    const prompt = `${fullSystemPrompt}
+
+Conversation history:
 ${formattedHistory}
 
-User: ${userMessage}
+Current user message: ${userMessage}
 
-Therapist:
-`;
+Therapist:`;
 
-    // Send ONLY this prompt
+    // Call Gemini API
     const result = await model.generateContent({
       contents: [
         {
