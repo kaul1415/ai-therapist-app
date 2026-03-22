@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MindBloom — AI Therapist</title>
+  <link rel="stylesheet" href="style.css"/>
+  <link id="fontLink" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet"/>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════
+     TOAST
+═══════════════════════════════════════════════ -->
+<div id="toast" class="toast"></div>
+
+<!-- ═══════════════════════════════════════════════
+     AUTH SCREEN  (shown when not logged in)
+═══════════════════════════════════════════════ -->
+<div id="authScreen" class="auth-screen">
+  <!-- decorative background blobs -->
+  <div class="auth-bg">
+    <div class="auth-blob b1"></div>
+    <div class="auth-blob b2"></div>
+    <div class="auth-blob b3"></div>
+  </div>
+
+  <div class="auth-box">
+    <!-- Logo -->
+    <div class="auth-logo">
+      <div class="auth-logo-icon">🌱</div>
+      <span class="auth-logo-text">MindBloom</span>
+    </div>
+
+    <!-- Tabs -->
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="loginTab" onclick="switchAuthTab('login')">Sign In</button>
+      <button class="auth-tab" id="signupTab" onclick="switchAuthTab('signup')">Create Account</button>
+    </div>
+
+    <!-- ── LOGIN FORM ── -->
+    <div id="loginForm" class="auth-form">
+      <p class="auth-welcome">Welcome back. Your space is ready.</p>
+      <div class="auth-field">
+        <label>Email</label>
+        <input type="email" id="loginEmail" placeholder="you@example.com" autocomplete="email"/>
+      </div>
+      <div class="auth-field">
+        <label>Password</label>
+        <div class="pass-wrap">
+          <input type="password" id="loginPassword" placeholder="Your password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"/>
+          <button class="pass-toggle" onclick="togglePass('loginPassword',this)" type="button">👁</button>
+        </div>
+      </div>
+      <div class="auth-err hidden" id="loginErr"></div>
+      <button class="auth-submit" id="loginBtn" onclick="doLogin()">Sign In</button>
+      <div class="auth-hint">Don't have an account? <a onclick="switchAuthTab('signup')">Create one free →</a></div>
+    </div>
+
+    <!-- ── SIGNUP FORM ── -->
+    <div id="signupForm" class="auth-form hidden">
+      <p class="auth-welcome">Create your free account. No credit card needed.</p>
+      <div class="auth-field">
+        <label>Full Name</label>
+        <input type="text" id="signupName" placeholder="Alex Johnson" maxlength="40"/>
+      </div>
+      <div class="auth-field">
+        <label>Email</label>
+        <input type="email" id="signupEmail" placeholder="you@example.com" autocomplete="email"/>
+      </div>
+      <div class="auth-field">
+        <label>Password <span class="field-hint">min 8 characters</span></label>
+        <div class="pass-wrap">
+          <input type="password" id="signupPassword" placeholder="Create a password" autocomplete="new-password"/>
+          <button class="pass-toggle" onclick="togglePass('signupPassword',this)" type="button">👁</button>
+        </div>
+        <div class="pass-strength" id="passStrength"></div>
+      </div>
+      <div class="auth-field">
+        <label>Confirm Password</label>
+        <input type="password" id="signupConfirm" placeholder="Repeat your password" onkeydown="if(event.key==='Enter')doSignup()"/>
+      </div>
+      <div class="auth-err hidden" id="signupErr"></div>
+      <button class="auth-submit" id="signupBtn" onclick="doSignup()">Create Account</button>
+      <div class="auth-hint">Already have an account? <a onclick="switchAuthTab('login')">Sign in →</a></div>
+    </div>
+
+    <div class="auth-footer-note">🔒 Your data stays private and is never shared.</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     MAIN APP  (hidden until logged in)
+═══════════════════════════════════════════════ -->
+<div id="app" class="app hidden">
+
+  <!-- ── SIDEBAR ── -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">🌱</div>
+      <span class="logo-text">MindBloom</span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a class="nav-item active" data-page="dashboard"  onclick="navigate('dashboard')"> <span class="nav-icon">🏠</span><span class="nav-label">Dashboard</span></a>
+      <a class="nav-item" data-page="chat"       onclick="navigate('chat')">      <span class="nav-icon">💬</span><span class="nav-label">Chat with Bloom</span></a>
+      <a class="nav-item" data-page="mood"       onclick="navigate('mood')">      <span class="nav-icon">📊</span><span class="nav-label">Mood Tracker</span></a>
+      <a class="nav-item" data-page="journal"    onclick="navigate('journal')">   <span class="nav-icon">📓</span><span class="nav-label">Journal</span></a>
+      <a class="nav-item" data-page="calendar"   onclick="navigate('calendar')">  <span class="nav-icon">📅</span><span class="nav-label">Calendar</span></a>
+      <a class="nav-item" data-page="history"    onclick="navigate('history')">   <span class="nav-icon">🕐</span><span class="nav-label">History</span></a>
+      <a class="nav-item" data-page="resources"  onclick="navigate('resources')"> <span class="nav-icon">📚</span><span class="nav-label">Resources</span></a>
+      <a class="nav-item" data-page="about"      onclick="navigate('about')">     <span class="nav-icon">ℹ️</span><span class="nav-label">About</span></a>
+      <a class="nav-item" data-page="settings"   onclick="navigate('settings')">  <span class="nav-icon">⚙️</span><span class="nav-label">Settings</span></a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-row">
+        <div class="user-avatar" id="sidebarAvatar">U</div>
+        <div class="user-info">
+          <div class="user-name" id="sidebarName">User</div>
+          <div class="user-streak" id="sidebarStreak">🔥 0 day streak</div>
+        </div>
+        <button class="logout-btn" onclick="doLogout()" title="Sign out">↩</button>
+      </div>
+    </div>
+
+    <button class="sidebar-close" id="sidebarClose" onclick="closeSidebar()">✕</button>
+  </aside>
+
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+  <!-- ── MAIN CONTENT ── -->
+  <div class="main-content">
+    <header class="topbar">
+      <button class="hamburger" onclick="openSidebar()"><span></span><span></span><span></span></button>
+      <div class="topbar-title" id="topbarTitle">Dashboard</div>
+      <div class="topbar-right">
+        <button class="topbar-icon-btn" onclick="toggleDarkMode()" title="Toggle dark mode">🌙</button>
+        <div class="topbar-user">
+          <div class="topbar-avatar" id="topbarAvatar">U</div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ════════════════════════════════════════════
+         PAGE: DASHBOARD
+    ════════════════════════════════════════════ -->
+    <section class="page active" id="page-dashboard">
+      <div class="welcome-banner">
+        <div class="welcome-text">
+          <h1 class="welcome-heading">Good <span id="timeGreeting">morning</span>, <span id="welcomeName">Friend</span> 🌿</h1>
+          <p class="welcome-sub">Your safe space is ready. Take a breath and check in whenever you feel like it.</p>
+        </div>
+        <div class="welcome-art">🌱</div>
+      </div>
+
+      <div class="section-label">Quick Check-In</div>
+      <div class="quick-mood-row">
+        <button class="quick-mood-btn" onclick="quickMood('Great','😁')">😁 Great</button>
+        <button class="quick-mood-btn" onclick="quickMood('Good','😊')">😊 Good</button>
+        <button class="quick-mood-btn" onclick="quickMood('Okay','😐')">😐 Okay</button>
+        <button class="quick-mood-btn" onclick="quickMood('Sad','😔')">😔 Sad</button>
+        <button class="quick-mood-btn" onclick="quickMood('Stressed','😰')">😰 Stressed</button>
+      </div>
+
+      <div class="section-label">What would you like to do?</div>
+      <div class="cards-grid">
+        <div class="card card-mint"  onclick="navigate('chat')">     <div class="card-icon">💬</div><div class="card-body"><div class="card-title">Talk to Bloom</div><div class="card-desc">Start a private, judgment-free conversation with your AI companion.</div></div><div class="card-arrow">→</div></div>
+        <div class="card card-peach" onclick="navigate('journal')">  <div class="card-icon">📓</div><div class="card-body"><div class="card-title">Write in Journal</div><div class="card-desc">Reflect on your day, capture thoughts, and process emotions through writing.</div></div><div class="card-arrow">→</div></div>
+        <div class="card card-sky"   onclick="navigate('mood')">     <div class="card-icon">📊</div><div class="card-body"><div class="card-title">Track Your Mood</div><div class="card-desc">Log how you're feeling and discover your emotional patterns over time.</div></div><div class="card-arrow">→</div></div>
+        <div class="card card-amber" onclick="navigate('calendar')">> <div class="card-icon">📅</div><div class="card-body"><div class="card-title">View Calendar</div><div class="card-desc">See your wellness journey laid out across the month at a glance.</div></div><div class="card-arrow">→</div></div>
+      </div>
+
+      <div class="section-label">Your Progress</div>
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-icon">🔥</div><div class="stat-value" id="dashStreak">0</div><div class="stat-label">Day Streak</div></div>
+        <div class="stat-card"><div class="stat-icon">💬</div><div class="stat-value" id="dashSessions">0</div><div class="stat-label">Chat Sessions</div></div>
+        <div class="stat-card"><div class="stat-icon">📓</div><div class="stat-value" id="dashJournals">0</div><div class="stat-label">Journal Entries</div></div>
+        <div class="stat-card"><div class="stat-icon">📊</div><div class="stat-value" id="dashMoods">0</div><div class="stat-label">Mood Logs</div></div>
+      </div>
+
+      <div class="dash-bottom-grid">
+        <div class="dash-bottom-card">
+          <div class="section-label" style="margin-top:0">Recent Activity</div>
+          <div id="dashActivity" class="dash-activity-list"><div class="empty-state">No activity yet. Start your journey above! 🌱</div></div>
+        </div>
+        <div class="dash-bottom-card">
+          <div class="section-label" style="margin-top:0">Today's Tip 💡</div>
+          <div class="tip-card"><div class="tip-icon">💡</div><div class="tip-text" id="dailyTip">Loading...</div></div>
+          <div class="section-label" style="margin-top:1.2rem">Today's Prompt ✍️</div>
+          <div class="prompt-card" id="dashPrompt"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════
+         PAGE: CHAT
+    ════════════════════════════════════════════ -->
+    <section class="page" id="page-chat">
+      <div class="chat-page-header">
+        <div class="chat-bloom-info">
+          <div class="chat-bloom-av">🌿</div>
+          <div><div class="chat-bloom-name">Bloom <span class="online-badge">● online</span></div><div class="chat-bloom-sub">Your AI wellness companion</div></div>
+        </div>
+        <div class="mode-selector">
+          <button class="mode-btn active" data-mode="advice"  onclick="setChatMode('advice',this)">💡 Advice</button>
+          <button class="mode-btn"        data-mode="vent"    onclick="setChatMode('vent',this)">🌊 Vent</button>
+          <button class="mode-btn"        data-mode="clarity" onclick="setChatMode('clarity',this)">🔮 Clarity</button>
+        </div>
+        <button class="new-chat-btn" onclick="startNewChat()">+ New Chat</button>
+      </div>
+
+      <div class="session-bar">
+        <span class="session-id-label">Session: <span id="sessionIdDisplay">Creating...</span></span>
+        <span class="session-mode-label" id="sessionModeLabel">💡 Advice Mode</span>
+      </div>
+
+      <div class="messages-area" id="messagesArea">
+        <div class="message-row ai-row" id="welcomeMsg">
+          <div class="msg-avatar ai-avatar">🌿</div>
+          <div class="msg-col">
+            <div class="msg-bubble ai-bubble">Hey there! 🌊 I'm Bloom, your mental wellness companion.<br/><br/>I'm here to listen without judgment. <strong>What would you like to talk about today?</strong></div>
+            <div class="msg-time">Just now</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="suggestions-wrap" id="suggestionsWrap">
+        <div class="suggestions-label">Try saying:</div>
+        <div class="suggestions-row">
+          <button class="suggestion-chip" onclick="useSuggestion(this)">I've been feeling anxious lately</button>
+          <button class="suggestion-chip" onclick="useSuggestion(this)">Help me with a breathing exercise</button>
+          <button class="suggestion-chip" onclick="useSuggestion(this)">I need some motivation today</button>
+          <button class="suggestion-chip" onclick="useSuggestion(this)">I'm stressed about work</button>
+        </div>
+      </div>
+
+      <div class="chat-input-area">
+        <div class="input-bar" id="inputBar">
+          <textarea id="chatInput" class="chat-textarea" placeholder="Share what's on your mind..." rows="1" onkeydown="handleChatKey(event)" oninput="autoGrow(this)"></textarea>
+          <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+        <div class="input-footer">
+          <span class="input-hint">🔒 Private. Enter to send, Shift+Enter for new line.</span>
+          <span class="char-count" id="charCount">0 / 500</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════
+         PAGE: MOOD TRACKER
+    ════════════════════════════════════════════ -->
+    <section class="page" id="page-mood">
+      <div class="page-header">
+        <h1 class="page-title">Mood Tracker 📊</h1>
+        <p class="page-subtitle">Track how you feel every day and discover your emotional patterns.</p>
+      </div>
+      <div class="mood-log-card">
+        <h3 class="mood-log-title">How are you feeling right now?</h3>
+        <p class="mood-log-sub">Tap a mood to log it. No wrong answers here.</p>
+        <div class="mood-buttons-grid">
+          <button class="mood-btn" data-score="5" onclick="selectMood(this)"><span class="mood-emoji">😁</span><span class="mood-name">Great</span></button>
+          <button class="mood-btn" data-score="4" onclick="selectMood(this)"><span class="mood-emoji">😊</span><span class="mood-name">Good</span></button>
+          <button class="mood-btn" data-score="3" onclick="selectMood(this)"><span class="mood-emoji">😐</span><span class="mood-name">Okay</span></button>
+          <button class="mood-btn" data-score="2" onclick="selectMood(this)"><span class="mood-emoji">😔</span><span class="mood-name">Sad</span></button>
+          <button class="mood-btn" data-score="1" onclick="selectMood(this)"><span class="mood-emoji">😰</span><span class="mood-name">Stressed</span></button>
+          <button class="mood-btn" data-score="2" onclick="selectMood(this)"><span class="mood-emoji">😤</span><span class="mood-name">Angry</span></button>
+          <button class="mood-btn" data-score="3" onclick="selectMood(this)"><span class="mood-emoji">😴</span><span class="mood-name">Tired</span></button>
+          <button class="mood-btn" data-score="4" onclick="selectMood(this)"><span class="mood-emoji">🤩</span><span class="mood-name">Excited</span></button>
+        </div>
+        <div class="selected-mood-display hidden" id="selectedMoodDisplay">
+          <div class="selected-mood-emoji" id="selectedMoodEmoji">😊</div>
+          <div class="selected-mood-text">You're feeling <strong id="selectedMoodName">Good</strong> right now.</div>
+        </div>
+        <div class="mood-note-wrap"><input type="text" id="moodNote" class="mood-note-input" placeholder="Add a note (optional) — what's on your mind?" maxlength="200"/></div>
+        <button class="log-mood-btn" id="logMoodBtn" onclick="logMood()" disabled>Log This Mood</button>
+      </div>
+      <div class="section-label">Your Mood History</div>
+      <div class="mood-stats-row">
+        <div class="mood-stat mint"><div class="ms-val" id="totalLogs">0</div><div class="ms-lbl">Total Logs</div></div>
+        <div class="mood-stat sky"><div class="ms-val" id="avgScore">—</div><div class="ms-lbl">Avg Score</div></div>
+        <div class="mood-stat peach"><div class="ms-val" id="topMoodStat">—</div><div class="ms-lbl">Most Common</div></div>
+        <div class="mood-stat amber"><div class="ms-val" id="todayCount">0</div><div class="ms-lbl">Today</div></div>
+      </div>
+      <div class="mood-log-list" id="moodLogList"><div class="empty-state">No moods logged yet. 🌱</div></div>
+      <div class="mood-actions">
+        <button class="clear-btn" onclick="clearMoodHistory()">🗑 Clear History</button>
+        <button class="btn-outline-mint" onclick="navigate('chat')">💬 Talk About It</button>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════
+         PAGE: JOURNAL
+    ════════════════════════════════════════════ -->
+    <section class="page" id="page-journal">
+      <div class="journal-layout">
+
+        <!-- Left panel: entry list -->
+        <div class="journal-list-panel">
+          <div class="journal-list-header">
+            <h2 class="journal-list-title">📓 Journal</h2>
+            <button class="new-entry-btn" onclick="openJournalEditor(null)">+ New Entry</button>
+          </div>
+          <div class="journal-search-row">
+            <input type="text" id="journalSearch" class="journal-search" placeholder="🔍 Search entries..." oninput="renderJournalList()"/>
+          </div>
+          <div class="journal-entry-list" id="journalEntryList">
+            <div class="empty-state">No entries yet.<br>Click <strong>+ New Entry</strong> to begin.</div>
+          </div>
+        </div>
+
+        <!-- Right panel: editor or welcome -->
+        <div class="journal-editor-panel" id="journalEditorPanel">
+          <!-- Default view when nothing selected -->
+          <div class="journal-welcome" id="journalWelcome">
+            <div class="jw-icon">📓</div>
+            <h3>Your Private Journal</h3>
+            <p>Writing is one of the most powerful tools for processing emotions and gaining clarity. Start with today's prompt or write freely.</p>
+            <div class="jw-prompt-card" id="jwPromptCard">Loading prompt...</div>
+            <button class="btn-mint" onclick="openJournalEditor(null)">✍️ Start Writing</button>
+          </div>
+
+          <!-- Editor (hidden by default, shown when editing) -->
+          <div class="journal-editor hidden" id="journalEditor">
+            <div class="editor-toolbar">
+              <div class="editor-date-row">
+                <input type="date" id="editorDate" class="editor-date-input"/>
+                <div class="editor-mood-tags" id="editorMoodTags">
+                  <span class="mood-tag-label">Mood:</span>
+                  <button class="mood-tag" data-emoji="😁" data-name="Great"    onclick="tagMood(this)">😁</button>
+                  <button class="mood-tag" data-emoji="😊" data-name="Good"     onclick="tagMood(this)">😊</button>
+                  <button class="mood-tag" data-emoji="😐" data-name="Okay"     onclick="tagMood(this)">😐</button>
+                  <button class="mood-tag" data-emoji="😔" data-name="Sad"      onclick="tagMood(this)">😔</button>
+                  <button class="mood-tag" data-emoji="😰" data-name="Stressed" onclick="tagMood(this)">😰</button>
+                </div>
+              </div>
+              <div class="editor-actions">
+                <button class="editor-prompt-btn" onclick="injectPrompt()" title="Get a writing prompt">💡 Prompt</button>
+                <button class="editor-save-btn" id="editorSaveBtn" onclick="saveJournalEntry()">💾 Save</button>
+                <button class="editor-cancel-btn" onclick="closeJournalEditor()">✕</button>
+              </div>
+            </div>
+
+            <input type="text" id="editorTitle" class="editor-title-input" placeholder="Entry title (optional)..." maxlength="80"/>
+
+            <div class="editor-prompt-banner hidden" id="editorPromptBanner">
+              <span class="epb-icon">💡</span>
+              <span class="epb-text" id="editorPromptText"></span>
+              <button class="epb-close" onclick="hidePromptBanner()">✕</button>
+            </div>
+
+            <textarea id="editorContent" class="editor-content" placeholder="Start writing... Let your thoughts flow freely. This is your private space." oninput="updateEditorWordCount()"></textarea>
+
+            <div class="editor-footer">
+              <span class="editor-wordcount" id="editorWordCount">0 words</span>
+              <span class="editor-save-status" id="editorSaveStatus"></span>
+            </div>
+
+            <!-- Hidden field to track which entry we're editing -->
+            <input type="hidden" id="editorEntryId" value=""/>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════
+         PAGE: CALENDAR
+    ════════════════════════════════════════════ -->
+    <section class="page" id="page-calendar">
+      <div class="calendar-layout">
+
+        <!-- Calendar main -->
+        <div class="calendar-main-panel">
+          <div class="cal-nav-row">
+            <button class="cal-nav-btn" onclick="changeCalMonth(-1)">‹</button>
+            <div class="cal-month-label" id="calMonthLabel">Month</div>
+            <button class="cal-nav-btn" onclick="changeCalMonth(1)">›</button>
+            <button class="cal-today-btn" onclick="goToToday()">Today</button>
+          </div>
+
+          <div class="cal-legend">
+            <span class="cl-item"><span class="cl-dot mood-dot"></span> Mood logged</span>
+            <span class="cl-item"><span class="cl-dot journal-dot"></span> Journal entry</span>
+            <span class="cl-item"><span class="cl-dot chat-dot"></span> Chat session</span>
+          </div>
+
+          <div class="calendar-grid" id="calendarGrid"></div>
+        </div>
+
+        <!-- Day detail panel -->
+        <div class="calendar-detail-panel" id="calDetailPanel">
+          <div class="cal-detail-header">
+            <div class="cal-detail-date" id="calDetailDate">Select a day</div>
+            <button class="cal-add-journal-btn" id="calAddJournalBtn" onclick="addJournalForCalDate()" style="display:none">+ Journal</button>
+          </div>
+          <div class="cal-detail-body" id="calDetailBody">
+            <div class="cal-detail-placeholder">
+              <div style="font-size:2.5rem;margin-bottom:0.6rem">📅</div>
+              <p>Click any date on the calendar to see your wellness data for that day.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════
+         PAGE: HISTORY
+    ════════════════════════════════════════════ -->
+    <section class="page" id="page-history">
+      <div class="page-header">
+        <h1 class="page-title">History 🕐</h1>
+        <p class="page-subtitle">Revisit your past conversations and track your wellness journey.</p>
+      </div>
+
+      <div class="history-tabs">
+        <button class="hist-tab active" data-htab="chats"    onclick="switchHistTab('chats',this)">💬 Chat History</button>
+        <button class="hist-tab"        data-htab="activity" onclick="switchHistTab('activity',this)">📋 Activity Log</button>
+      </div>
+
+      <!-- Chat history tab -->
+      <div id="histTabChats" class="hist-tab-content active">
+        <div class="hist-search-row">
+          <input type="text" id="histChatSearch" class="hist-search" placeholder="🔍 Search conversations..." oninput="renderChatHistory()"/>
+          <button class="clear-btn" onclick="clearAllChatHistory()">🗑 Clear All</button>
+        </div>
+        <div id="chatHistoryList" class="chat-history-list"><div class="empty-state">No chat sessions yet. Start a conversation! 💬</div></div>
+      </div>
+
+      <!-- Activity log tab -->
+      <div id="histTabActivity" class="hist-tab-content">
+        <div class="hist-search-row">
+          <input type="text" id="histActivitySearch" class="hist-search" placeholder="🔍 Filter activity..." oninput="renderActivityLog()"/>
+          <button class="clear-btn" onclick="clearActivityLog()">🗑 Clear Log</button>
+        </div>
+        <div id="activityLogList" class="activity-log-list"><div class="empty-state">No activity logged yet. 🌱</div></div>
+      </div>
+
+      <!-- Chat session viewer modal -->
+      <div class="session-viewer hidden" id="sessionViewer">
+        <div class="sv-header">
+          <div class="sv-title" id="svTitle">Session</div>
+          <div class="sv-meta" id="svMeta"></div>
+          <button class="sv-close" onclick="closeSessionViewer()">✕ Close</button>
+        </div>
+        <div class="sv-messages" id="svMessages"></div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════
+         PAGE: RESOURCES
+    ════════════════════════════════════════════ -->
+    <section class="page" id="page-resources">
+      <div class="page-header">
+        <h1 class="page-title">Resources 📚</h1>
+        <p class="page-subtitle">Science-backed tools and tips to support your mental health.</p>
+      </div>
+      <div class="resources-search-row">
+        <input type="text" id="resourceSearch" class="resource-search-input" placeholder="🔍 Search resources..." oninput="filterResources()"/>
+        <div class="resource-filter-chips">
+          <button class="filter-chip active" data-filter="all"        onclick="setResourceFilter('all',this)">All</button>
+          <button class="filter-chip"        data-filter="breathing"  onclick="setResourceFilter('breathing',this)">🌬️ Breathing</button>
+          <button class="filter-chip"        data-filter="anxiety"    onclick="setResourceFilter('anxiety',this)">😰 Anxiety</button>
+          <button class="filter-chip"        data-filter="sleep"      onclick="setResourceFilter('sleep',this)">😴 Sleep</button>
+          <button class="filter-chip"        data-filter="stress"     onclick="setResourceFilter('stress',this)">💆 Stress</button>
+          <button class="filter-chip"        data-filter="motivation" onclick="setResourceFilter('motivation',this)">⚡ Motivation</button>
+        </div>
+      </div>
+      <div class="resources-grid" id="resourcesGrid"></div>
+      <div class="emergency-banner">
+        <div class="emergency-icon">🆘</div>
+        <div class="emergency-text"><strong>In crisis or need immediate help?</strong><br/><span>Crisis lines are available 24/7 and completely confidential.</span></div>
+        <a class="emergency-link" href="https://findahelpline.com" target="_blank">Find a Helpline →</a>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════
+         PAGE: ABOUT
+    ════════════════════════════════════════════ -->
+    <section class="page" id="page-about">
+
+      <!-- Hero -->
+      <div class="about-hero">
+        <div class="about-hero-icon">🌱</div>
+        <h1 class="about-hero-title">Welcome to MindBloom</h1>
+        <p class="about-hero-sub">Your personal AI-powered mental wellness companion — available 24/7, completely private, and always supportive.</p>
+      </div>
+
+      <!-- What is it -->
+      <div class="about-section">
+        <div class="about-section-label">What is MindBloom?</div>
+        <div class="about-text-card">
+          <p>MindBloom is a mental wellness web app designed for students, young professionals, and anyone navigating stress, anxiety, or emotional overwhelm. It combines an AI chat companion, mood tracking, journaling, and wellness resources into one calm, private space.</p>
+          <p style="margin-top:0.8rem">Think of it as having a wise, supportive friend available at any hour — one who listens without judgment, helps you reflect, and gently guides you toward clarity.</p>
+          <p style="margin-top:0.8rem"><strong>MindBloom is not a replacement for professional therapy.</strong> If you're in crisis, please reach out to a licensed professional or crisis line. MindBloom is a tool for everyday emotional support and self-awareness.</p>
+        </div>
+      </div>
+
+      <!-- How it works -->
+      <div class="about-section">
+        <div class="about-section-label">How It Works</div>
+        <div class="about-steps-grid">
+          <div class="about-step"><div class="step-num">01</div><div class="step-icon">👤</div><h4>Create your account</h4><p>Sign up in seconds. Your data is private and stored only on your device — never shared.</p></div>
+          <div class="about-step"><div class="step-num">02</div><div class="step-icon">💬</div><h4>Chat with Bloom</h4><p>Talk to Bloom about anything. Choose your mode: Vent (just listen), Advice (help me), or Clarity (ask me things).</p></div>
+          <div class="about-step"><div class="step-num">03</div><div class="step-icon">📊</div><h4>Track your emotions</h4><p>Log your mood daily. Over time, you'll see patterns that help you understand what lifts and drains you.</p></div>
+          <div class="about-step"><div class="step-num">04</div><div class="step-icon">📓</div><h4>Journal your thoughts</h4><p>Write freely in your private journal. Use AI-generated prompts to break through writer's block.</p></div>
+        </div>
+      </div>
+
+      <!-- Features -->
+      <div class="about-section">
+        <div class="about-section-label">What You Can Do</div>
+        <div class="about-features-grid">
+          <div class="about-feature-card" style="--fc-bg:rgba(60,191,160,0.08);--fc-border:rgba(60,191,160,0.25)">
+            <span>💬</span><h4>Chat with Bloom</h4>
+            <p>3 modes: Vent, Advice, Clarity. Bloom adapts its tone to what you need right now.</p>
+          </div>
+          <div class="about-feature-card" style="--fc-bg:rgba(255,140,107,0.08);--fc-border:rgba(255,140,107,0.25)">
+            <span>📊</span><h4>Mood Tracking</h4>
+            <p>Log moods with one tap. See your emotional trends with stats and history.</p>
+          </div>
+          <div class="about-feature-card" style="--fc-bg:rgba(107,184,232,0.08);--fc-border:rgba(107,184,232,0.25)">
+            <span>📓</span><h4>Private Journal</h4>
+            <p>Write daily entries. Tag moods, use prompts, edit anytime. Fully searchable.</p>
+          </div>
+          <div class="about-feature-card" style="--fc-bg:rgba(245,197,24,0.08);--fc-border:rgba(245,197,24,0.25)">
+            <span>📅</span><h4>Wellness Calendar</h4>
+            <p>See your entire month at a glance — moods, journal entries, and chat sessions.</p>
+          </div>
+          <div class="about-feature-card" style="--fc-bg:rgba(60,191,160,0.08);--fc-border:rgba(60,191,160,0.25)">
+            <span>📚</span><h4>Resources</h4>
+            <p>Curated mental health tips: breathing exercises, anxiety tools, sleep guides, and more.</p>
+          </div>
+          <div class="about-feature-card" style="--fc-bg:rgba(255,140,107,0.08);--fc-border:rgba(255,140,107,0.25)">
+            <span>🕐</span><h4>History</h4>
+            <p>Revisit past conversations and review your activity log at any time.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chat mode guide -->
+      <div class="about-section">
+        <div class="about-section-label">Understanding Bloom's Chat Modes</div>
+        <div class="about-modes-grid">
+          <div class="about-mode-card mode-vent">
+            <div class="amc-icon">🌊</div>
+            <h4>Vent Mode</h4>
+            <p>Bloom listens without advice or judgment. Use this when you just need to get it all out. No suggestions, no solutions — just a compassionate ear.</p>
+            <div class="amc-example">"I just need to talk…" → Bloom listens and reflects.</div>
+          </div>
+          <div class="about-mode-card mode-advice">
+            <div class="amc-icon">💡</div>
+            <h4>Advice Mode</h4>
+            <p>Bloom gently suggests coping strategies, techniques, and perspectives. Use this when you want practical help with what you're going through.</p>
+            <div class="amc-example">"I've been so anxious about exams" → Bloom offers strategies.</div>
+          </div>
+          <div class="about-mode-card mode-clarity">
+            <div class="amc-icon">🔮</div>
+            <h4>Clarity Mode</h4>
+            <p>Bloom asks thoughtful questions to help you think through a situation yourself. Like a gentle coach helping you find your own answers.</p>
+            <div class="amc-example">"I don't know what to do…" → Bloom asks powerful questions.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Privacy -->
+      <div class="about-section">
+        <div class="about-section-label">Your Privacy</div>
+        <div class="about-privacy-card">
+          <div class="apc-icon">🔒</div>
+          <div>
+            <h4>Your data stays with you</h4>
+            <p>MindBloom stores all your personal data (journal entries, moods, chat history) only in your browser's local storage. This means it never leaves your device and is never sent to any server without your knowledge. Clearing your browser data will remove it — so consider exporting important entries.</p>
+            <p style="margin-top:0.6rem">AI conversations are sent to the backend for processing, but are not permanently stored on any server beyond what your backend is configured to keep.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- FAQ -->
+      <div class="about-section">
+        <div class="about-section-label">Frequently Asked Questions</div>
+        <div class="faq-list" id="faqList">
+          <!-- Built by JS -->
+        </div>
+      </div>
+
+      <!-- Version info -->
+      <div class="about-version">
+        <div class="av-logo">🌱</div>
+        <div class="av-name">MindBloom v2.0</div>
+        <div class="av-sub">Built with 💚 for mental wellness · Not a substitute for professional care</div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════
+         PAGE: SETTINGS
+    ════════════════════════════════════════════ -->
+    <section class="page" id="page-settings">
+      <div class="page-header">
+        <h1 class="page-title">Settings ⚙️</h1>
+        <p class="page-subtitle">Customize your MindBloom experience.</p>
+      </div>
+
+      <!-- Appearance -->
+      <div class="settings-group">
+        <div class="settings-group-title">Appearance</div>
+
+        <div class="settings-row">
+          <div class="settings-info"><div class="settings-label">Dark Mode</div><div class="settings-desc">Switch between light and dark themes.</div></div>
+          <label class="toggle-switch"><input type="checkbox" id="darkModeToggle" onchange="toggleDarkMode()"/><span class="toggle-slider"></span></label>
+        </div>
+
+        <!-- FONT FAMILY (fixed) -->
+        <div class="settings-row">
+          <div class="settings-info">
+            <div class="settings-label">Font Style</div>
+            <div class="settings-desc">Choose how text looks throughout the app.</div>
+          </div>
+          <div class="font-picker">
+            <div class="font-option active" data-font="DM Sans"   onclick="changeFontFamily('DM Sans',this)"  style="font-family:'DM Sans'">Aa <span>DM Sans</span></div>
+            <div class="font-option"        data-font="Nunito"    onclick="changeFontFamily('Nunito',this)"   style="font-family:'Nunito'">Aa <span>Nunito</span></div>
+            <div class="font-option"        data-font="Lora"      onclick="changeFontFamily('Lora',this)"     style="font-family:'Lora'">Aa <span>Lora</span></div>
+            <div class="font-option"        data-font="Raleway"   onclick="changeFontFamily('Raleway',this)"  style="font-family:'Raleway'">Aa <span>Raleway</span></div>
+            <div class="font-option"        data-font="Quicksand" onclick="changeFontFamily('Quicksand',this)" style="font-family:'Quicksand'">Aa <span>Quicksand</span></div>
+          </div>
+        </div>
+
+        <!-- FONT PREVIEW -->
+        <div class="settings-row">
+          <div class="settings-info"><div class="settings-label">Font Preview</div><div class="settings-desc">See how the selected font looks.</div></div>
+          <div class="font-preview-box" id="fontPreviewBox">The quick brown fox jumps over the lazy dog. 0123456789</div>
+        </div>
+
+        <!-- FONT SIZE -->
+        <div class="settings-row">
+          <div class="settings-info">
+            <div class="settings-label">Font Size</div>
+            <div class="settings-desc">Current: <span id="fontSizeLabel">Medium (16px)</span></div>
+          </div>
+          <div class="size-slider-wrap">
+            <span class="size-label-sm">A</span>
+            <input type="range" id="fontSizeRange" min="13" max="20" value="16" oninput="changeFontSize(this.value)" class="size-slider"/>
+            <span class="size-label-lg">A</span>
+          </div>
+        </div>
+
+        <!-- ACCENT COLOR -->
+        <div class="settings-row">
+          <div class="settings-info"><div class="settings-label">Accent Color</div><div class="settings-desc">Main highlight color for buttons.</div></div>
+          <div class="color-swatches">
+            <button class="swatch active" style="background:#3CBFA0" data-color="#3CBFA0" onclick="setAccent(this)" title="Mint"></button>
+            <button class="swatch"        style="background:#FF8C6B" data-color="#FF8C6B" onclick="setAccent(this)" title="Peach"></button>
+            <button class="swatch"        style="background:#6BB8E8" data-color="#6BB8E8" onclick="setAccent(this)" title="Sky"></button>
+            <button class="swatch"        style="background:#F5C518" data-color="#F5C518" onclick="setAccent(this)" title="Amber"></button>
+            <button class="swatch"        style="background:#a78bfa" data-color="#a78bfa" onclick="setAccent(this)" title="Lavender"></button>
+            <button class="swatch"        style="background:#f472b6" data-color="#f472b6" onclick="setAccent(this)" title="Pink"></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Profile -->
+      <div class="settings-group">
+        <div class="settings-group-title">Your Profile</div>
+        <div class="settings-row align-start">
+          <div class="settings-info"><div class="settings-label">Display Name</div><div class="settings-desc">How Bloom addresses you.</div></div>
+          <div class="settings-input-group">
+            <input type="text" id="displayNameInput" class="settings-text-input" placeholder="Enter your name" maxlength="30"/>
+            <button class="btn-save" onclick="saveName()">Save</button>
+          </div>
+        </div>
+        <div class="settings-row">
+          <div class="settings-info"><div class="settings-label">Email</div><div class="settings-desc">Your account email.</div></div>
+          <span class="settings-value-text" id="settingsEmail">—</span>
+        </div>
+        <div class="settings-row">
+          <div class="settings-info"><div class="settings-label">Member Since</div><div class="settings-desc">When you joined MindBloom.</div></div>
+          <span class="settings-value-text" id="memberSince">—</span>
+        </div>
+      </div>
+
+      <!-- Notifications -->
+      <div class="settings-group">
+        <div class="settings-group-title">Reminders</div>
+        <div class="settings-row">
+          <div class="settings-info"><div class="settings-label">Daily Mood Reminder</div><div class="settings-desc">Get a gentle nudge to log your mood.</div></div>
+          <label class="toggle-switch"><input type="checkbox" id="moodReminderToggle" onchange="saveSetting('moodReminder',this.checked)"/><span class="toggle-slider"></span></label>
+        </div>
+        <div class="settings-row">
+          <div class="settings-info"><div class="settings-label">Breathing Break Reminder</div><div class="settings-desc">Remind me to take a breathing break.</div></div>
+          <label class="toggle-switch"><input type="checkbox" id="breathingReminderToggle" onchange="saveSetting('breathingReminder',this.checked)"/><span class="toggle-slider"></span></label>
+        </div>
+      </div>
+
+      <!-- Chat Preferences -->
+      <div class="settings-group">
+        <div class="settings-group-title">Chat Preferences</div>
+        <div class="settings-row">
+          <div class="settings-info"><div class="settings-label">Default Chat Mode</div><div class="settings-desc">Bloom's style when you start a new chat.</div></div>
+          <select class="settings-select" id="defaultModeSelect" onchange="saveSetting('defaultMode',this.value)">
+            <option value="advice">💡 Advice</option>
+            <option value="vent">🌊 Vent</option>
+            <option value="clarity">🔮 Clarity</option>
+          </select>
+        </div>
+        <div class="settings-row">
+          <div class="settings-info"><div class="settings-label">Show Typing Indicator</div><div class="settings-desc">Show "Bloom is typing..." animation.</div></div>
+          <label class="toggle-switch"><input type="checkbox" id="typingIndicatorToggle" checked onchange="saveSetting('showTyping',this.checked)"/><span class="toggle-slider"></span></label>
+        </div>
+      </div>
+
+      <!-- Data -->
+      <div class="settings-group">
+        <div class="settings-group-title">Your Data</div>
+        <div class="settings-row">
+          <div class="settings-info"><div class="settings-label">Clear Mood History</div><div class="settings-desc">Delete all logged moods.</div></div>
+          <button class="btn-danger" onclick="clearMoodHistory()">Clear Moods</button>
+        </div>
+        <div class="settings-row">
+          <div class="settings-info"><div class="settings-label">Clear Journal Entries</div><div class="settings-desc">Permanently delete all journal entries.</div></div>
+          <button class="btn-danger" onclick="clearAllJournalEntries()">Clear Journal</button>
+        </div>
+        <div class="settings-row">
+          <div class="settings-info"><div class="settings-label">Reset All Settings</div><div class="settings-desc">Restore everything to defaults.</div></div>
+          <button class="btn-danger" onclick="resetAllSettings()">Reset</button>
+        </div>
+      </div>
+
+      <div class="app-info">
+        <div class="app-info-logo">🌱</div>
+        <div class="app-info-name">MindBloom v2.0</div>
+        <div class="app-info-sub">Your AI mental wellness companion · Made with 💚</div>
+        <button class="logout-full-btn" onclick="doLogout()">↩ Sign Out</button>
+      </div>
+    </section>
+
+  </div><!-- /main-content -->
+</div><!-- /app -->
+
+<script src="script.js"></script>
+</body>
+</html>
