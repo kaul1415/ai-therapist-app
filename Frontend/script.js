@@ -18,13 +18,14 @@
    14. Activity logging
    15. Storage helpers
    16. Utility helpers
+   17. API integration helpers
 ═══════════════════════════════════════════════════ */
 
 /* ─────────────────────────────────────────────────────
    1. CONFIG & GLOBAL STATE
 ───────────────────────────────────────────────────── */
 
-const API_BASE = "http://localhost:5000";  // ← change to your backend URL
+const API_BASE = "http://localhost:5000/api";  // Updated to include /api
 
 // Loaded fonts cache (to avoid duplicate <link> tags)
 const loadedFonts = new Set(["DM Sans"]);
@@ -52,7 +53,8 @@ const state = {
     showTyping:         true,
     moodReminder:       false,
     breathingReminder:  false,
-  }
+  },
+  backendAvailable: false,       // Track if backend is reachable
 };
 
 // Selected mood on mood page (temp)
@@ -153,7 +155,6 @@ const DEMO_RESPONSES = {
   ],
 };
 
-
 /* ─────────────────────────────────────────────────────
    2. APP INITIALIZATION
 ───────────────────────────────────────────────────── */
@@ -188,7 +189,7 @@ function checkAuthAndInit() {
 /**
  * Initialize the app after successful login.
  */
-function initApp() {
+async function initApp() {
   const u = state.currentUser;
   if (!u) return;
 
@@ -197,6 +198,14 @@ function initApp() {
 
   // Apply saved settings
   applySettings();
+
+  // Check backend availability
+  await checkBackendHealth();
+
+  // Sync data from backend if available
+  if (state.backendAvailable) {
+    await syncUserDataFromBackend();
+  }
 
   // Build resources & FAQ (static, done once)
   buildResourcesGrid();
@@ -210,7 +219,9 @@ function initApp() {
   renderDashActivity();
 
   // Start chat session
-  createChatSession();
+  if (state.backendAvailable) {
+    await createChatSession();
+  }
 
   // Init mood page
   loadMoodHistory();
@@ -252,6 +263,101 @@ function updateUserUI(name) {
   updateStreakDisplay();
 }
 
+/* ─────────────────────────────────────────────────────
+   17. API INTEGRATION HELPERS
+───────────────────────────────────────────────────── */
+
+/**
+ * Generic API request handler with auth and error handling
+ */
+async function apiRequest(endpoint, method = 'GET', body = null) {
+  const token = localStorage.getItem('token');
+  const headers = {
+    'Content-Type': 'application/json',
+  };
+  
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  try {
+    const options = {
+      method,
+      headers,
+    };
+    
+    if (body) {
+      options.body = JSON.stringify(body);
+    }
+
+    const res = await fetch(API_BASE + endpoint, options);
+    
+    if (res.status === 401) {
+      // Token invalid or expired
+      doLogout();
+      showToast("Session expired. Please log in again.");
+      return null;
+    }
+    
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(errorData.message || `HTTP ${res.status}`);
+    }
+    
+    // Mark backend as available
+    state.backendAvailable = true;
+    return await res.json();
+    
+  } catch (error) {
+    console.error('API request failed:', error);
+    state.backendAvailable = false;
+    return null;
+  }
+}
+
+/**
+ * Check if backend is reachable
+ */
+async function checkBackendHealth() {
+  try {
+    const res = await fetch(API_BASE, { method: 'GET' });
+    if (res.ok) {
+      state.backendAvailable = true;
+    }
+  } catch (error) {
+    state.backendAvailable = false;
+    console.warn('Backend not available, using localStorage fallback');
+  }
+}
+
+/**
+ * Sync user data from backend to localStorage
+ */
+async function syncUserDataFromBackend() {
+  if (!state.backendAvailable) return;
+
+  try {
+    // Sync moods
+    const moods = await apiRequest('/mood');
+    if (moods) {
+      saveUserData('moods', moods);
+    }
+
+    // Sync journal entries
+    const entries = await apiRequest('/journal');
+    if (entries) {
+      saveUserData('journal', entries);
+    }
+
+    // Sync chat sessions
+    const sessions = await apiRequest('/chat/sessions');
+    if (sessions) {
+      saveUserData('chatSessions', sessions);
+    }
+  } catch (error) {
+    console.error('Failed to sync data from backend:', error);
+  }
+}
 
 /* ─────────────────────────────────────────────────────
    3. AUTHENTICATION
@@ -301,9 +407,9 @@ function checkPasswordStrength() {
 }
 
 /**
- * Login: validates fields, checks against stored users.
+ * Login: validates fields, checks against backend API
  */
-function doLogin() {
+async function doLogin() {
   clearAuthErrors();
   const email    = (document.getElementById("loginEmail").value || "").trim().toLowerCase();
   const password = (document.getElementById("loginPassword").value || "");
@@ -314,20 +420,33 @@ function doLogin() {
   btn.disabled = true; btn.textContent = "Signing in...";
 
   try {
-    // In a real app this would be a fetch() call to your auth backend
-    // For this demo we use localStorage
-    const users = getAllUsers();
-    const user  = users.find(function (u) { return u.email === email && u.password === password; });
-    if (!user) {
-      showAuthError("loginErr", "Incorrect email or password. Please try again.");
-      return;
+    const result = await apiRequest('/auth/login', 'POST', { email, password });
+    
+    if (!result) {
+      // Backend failed, fallback to localStorage
+      const users = getAllUsers();
+      const user  = users.find(function (u) { return u.email === email && u.password === password; });
+      if (!user) {
+        showAuthError("loginErr", "Incorrect email or password. Please try again.");
+        return;
+      }
+      state.currentUser = user;
+      saveSession({ userId: user.id });
+      hideAuthScreen();
+      logActivity("other", "Signed in to MindBloom (offline mode)");
+      initApp();
+      showToast("Welcome back, " + user.name.split(" ")[0] + "! 🌱 (offline)");
+    } else {
+      // Backend success
+      const { user, token } = result;
+      localStorage.setItem('token', token);
+      state.currentUser = user;
+      saveSession({ userId: user.id });
+      hideAuthScreen();
+      logActivity("other", "Signed in to MindBloom");
+      initApp();
+      showToast("Welcome back, " + user.name.split(" ")[0] + "! 🌱");
     }
-    state.currentUser = user;
-    saveSession({ userId: user.id });
-    hideAuthScreen();
-    logActivity("other", "Signed in to MindBloom");
-    initApp();
-    showToast("Welcome back, " + user.name.split(" ")[0] + "! 🌱");
   } catch (e) {
     showAuthError("loginErr", "Something went wrong. Please try again.");
   } finally {
@@ -336,9 +455,9 @@ function doLogin() {
 }
 
 /**
- * Signup: validates fields, creates a new user.
+ * Signup: validates fields, creates a new user via backend
  */
-function doSignup() {
+async function doSignup() {
   clearAuthErrors();
   const name     = (document.getElementById("signupName").value     || "").trim();
   const email    = (document.getElementById("signupEmail").value    || "").trim().toLowerCase();
@@ -355,20 +474,35 @@ function doSignup() {
   btn.disabled = true; btn.textContent = "Creating account...";
 
   try {
-    const users = getAllUsers();
-    if (users.find(function (u) { return u.email === email; })) {
-      showAuthError("signupErr", "An account with this email already exists.");
-      return;
+    const result = await apiRequest('/auth/register', 'POST', { name, email, password });
+    
+    if (!result) {
+      // Backend failed, fallback to localStorage
+      const users = getAllUsers();
+      if (users.find(function (u) { return u.email === email; })) {
+        showAuthError("signupErr", "An account with this email already exists.");
+        return;
+      }
+      const newUser = { id:"user_"+Date.now(), name, email, password, createdAt: new Date().toISOString() };
+      users.push(newUser);
+      saveAllUsers(users);
+      state.currentUser = newUser;
+      saveSession({ userId: newUser.id });
+      hideAuthScreen();
+      initApp();
+      logActivity("other", "Created MindBloom account (offline mode)");
+      showToast("Welcome to MindBloom, " + name.split(" ")[0] + "! 🌱 (offline)");
+    } else {
+      // Backend success
+      const { user, token } = result;
+      localStorage.setItem('token', token);
+      state.currentUser = user;
+      saveSession({ userId: user.id });
+      hideAuthScreen();
+      initApp();
+      logActivity("other", "Created MindBloom account");
+      showToast("Welcome to MindBloom, " + name.split(" ")[0] + "! 🌱");
     }
-    const newUser = { id:"user_"+Date.now(), name, email, password, createdAt: new Date().toISOString() };
-    users.push(newUser);
-    saveAllUsers(users);
-    state.currentUser = newUser;
-    saveSession({ userId: newUser.id });
-    hideAuthScreen();
-    initApp();
-    logActivity("other", "Created MindBloom account");
-    showToast("Welcome to MindBloom, " + name.split(" ")[0] + "! 🌱");
   } catch (e) {
     showAuthError("signupErr", "Something went wrong. Please try again.");
   } finally {
@@ -378,6 +512,7 @@ function doSignup() {
 
 function doLogout() {
   if (!confirm("Sign out of MindBloom?")) return;
+  localStorage.removeItem('token');
   clearSession();
   state.currentUser = null;
   state.sessionId   = null;
@@ -385,7 +520,6 @@ function doLogout() {
   // Reset page to dashboard for next login
   state.currentPage = "dashboard";
 }
-
 
 /* ─────────────────────────────────────────────────────
    4. NAVIGATION
@@ -493,7 +627,6 @@ function quickMood(name, emoji) {
   showToast(emoji + " Mood logged: " + name + "!");
 }
 
-
 /* ─────────────────────────────────────────────────────
    6. CHAT
 ───────────────────────────────────────────────────── */
@@ -501,20 +634,23 @@ function quickMood(name, emoji) {
 async function createChatSession() {
   const display = document.getElementById("sessionIdDisplay");
   try {
-    const res = await fetch(API_BASE + "/api/chat/sessions", {
-      method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({ title:"New session" })
-    });
-    if (!res.ok) throw new Error("HTTP " + res.status);
-    const data    = await res.json();
-    const session = data.session || data.data || data;
-    state.sessionId = session._id || session.id;
-    if (display) display.textContent = state.sessionId.toString().slice(-8) + "...";
-    logActivity("chat", "Started new chat session");
+    const result = await apiRequest('/chat/sessions', 'POST', { title:"New session" });
+    
+    if (!result) {
+      // Backend failed, use local session ID
+      state.sessionId = "local-" + Date.now();
+      if (display) display.textContent = state.sessionId.toString().slice(-8) + "...";
+      console.warn('Backend unavailable, using local session ID');
+    } else {
+      const session = result.session || result.data || result;
+      state.sessionId = session._id || session.id;
+      if (display) display.textContent = state.sessionId.toString().slice(-8) + "...";
+      logActivity("chat", "Started new chat session");
+    }
   } catch (e) {
     state.sessionId = "local-" + Date.now();
     if (display) display.textContent = "offline";
-    console.warn("Backend offline, demo mode:", e.message);
+    console.error("Failed to create chat session:", e);
   }
 }
 
@@ -630,25 +766,28 @@ async function sendMessage() {
   if (!state.sessionId) await createChatSession();
 
   try {
-    const res = await fetch(API_BASE + "/api/chat/sessions/" + state.sessionId + "/messages", {
-      method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({ message: text, mode: state.chatMode })
-    });
-    if (!res.ok) throw new Error("HTTP " + res.status);
-    const data  = await res.json();
-    const reply = data.reply || data.message || data.content || data.response || data.data?.reply || "I'm here. Tell me more.";
-    if (typingEl) typingEl.remove();
-    addChatMessage(reply, "ai");
-    logActivity("chat", "Chatted with Bloom (" + state.chatMode + " mode)");
+    const result = await apiRequest('/chat/sessions/' + state.sessionId + '/messages', 'POST', { message: text, mode: state.chatMode });
+    
+    if (!result) {
+      // Backend failed, use demo response
+      if (typingEl) typingEl.remove();
+      const replies = DEMO_RESPONSES[state.chatMode] || DEMO_RESPONSES.advice;
+      addChatMessage(replies[Math.floor(Math.random() * replies.length)], "ai");
+      const errEl = document.createElement("div");
+      errEl.className = "error-bubble"; errEl.textContent = "⚠️ Backend unavailable. Showing demo response.";
+      document.getElementById("messagesArea")?.appendChild(errEl);
+    } else {
+      // Backend success
+      if (typingEl) typingEl.remove();
+      const reply = result.reply || result.message || result.content || result.response || result.data?.reply || "I'm here. Tell me more.";
+      addChatMessage(reply, "ai");
+      logActivity("chat", "Chatted with Bloom (" + state.chatMode + " mode)");
+    }
   } catch (err) {
     if (typingEl) typingEl.remove();
     const replies = DEMO_RESPONSES[state.chatMode] || DEMO_RESPONSES.advice;
     addChatMessage(replies[Math.floor(Math.random() * replies.length)], "ai");
-    if (err.message.includes("HTTP")) {
-      const errEl = document.createElement("div");
-      errEl.className = "error-bubble"; errEl.textContent = "⚠️ Server error. Showing demo response.";
-      document.getElementById("messagesArea")?.appendChild(errEl);
-    }
+    console.error("Send message error:", err);
   }
 
   if (sndBtn) sndBtn.disabled = false;
@@ -690,7 +829,6 @@ function showTypingBubble() {
 
 function scrollChat() { const a = document.getElementById("messagesArea"); if (a) a.scrollTop = a.scrollHeight; }
 
-
 /* ─────────────────────────────────────────────────────
    7. MOOD TRACKER
 ───────────────────────────────────────────────────── */
@@ -699,7 +837,7 @@ function loadMoodHistory() {
   /* data loaded on demand via loadUserData("moods") */
 }
 
-function selectMood(btn) {
+async function selectMood(btn) {
   document.querySelectorAll(".mood-btn").forEach(function (b) { b.classList.remove("selected"); });
   btn.classList.add("selected");
   const emoji = btn.querySelector(".mood-emoji").textContent;
@@ -716,21 +854,42 @@ function selectMood(btn) {
   if (lb) lb.disabled = false;
 }
 
-function logMood() {
+async function logMood() {
   if (!selectedMoodData) return showToast("Please select a mood first!");
   const note  = (document.getElementById("moodNote")?.value || "").trim();
   const entry = { ...selectedMoodData, note, time: new Date().toISOString(), timeStr: formatTime(new Date()) };
-  const moods = loadUserData("moods") || [];
-  moods.push(entry);
-  saveUserData("moods", moods);
-  updateMoodPageStats(); renderMoodLogList(); updateDashboardStats(); updateStreakDisplay();
+  
+  // Try backend first
+  const result = await apiRequest('/mood', 'POST', entry);
+  
+  if (result) {
+    // Backend saved successfully, sync moods from backend
+    const updatedMoods = await apiRequest('/mood', 'GET');
+    if (updatedMoods) {
+      saveUserData('moods', updatedMoods);
+    }
+  } else {
+    // Backend failed, fallback to localStorage
+    const moods = loadUserData("moods") || [];
+    moods.push(entry);
+    saveUserData("moods", moods);
+    showToast("Backend unavailable, saved locally.");
+  }
+
+  // Update UI (reads from localStorage which may have been updated by backend sync)
+  renderMoodLogList();
+  updateMoodPageStats();
+  updateDashboardStats();
+  updateStreakDisplay();
   logActivity("mood", "Logged mood: " + entry.name + " " + entry.emoji);
+  
   // Reset UI
   document.querySelectorAll(".mood-btn").forEach(function (b) { b.classList.remove("selected"); });
   const d = document.getElementById("selectedMoodDisplay"); if (d) d.classList.add("hidden");
   const noteInput = document.getElementById("moodNote"); if (noteInput) noteInput.value = "";
   const lb = document.getElementById("logMoodBtn"); if (lb) lb.disabled = true;
   selectedMoodData = null;
+  
   showToast(entry.emoji + " Mood logged: " + entry.name);
 }
 
@@ -782,7 +941,6 @@ function clearMoodHistory() {
   renderMoodLogList(); updateMoodPageStats(); updateDashboardStats();
   showToast("Mood history cleared.");
 }
-
 
 /* ─────────────────────────────────────────────────────
    8. JOURNAL
@@ -911,7 +1069,7 @@ function updateEditorWordCount() {
   setEl("editorWordCount", words + " word" + (words !== 1 ? "s" : ""));
 }
 
-function saveJournalEntry() {
+async function saveJournalEntry() {
   const date    = document.getElementById("editorDate")?.value    || todayStr();
   const title   = document.getElementById("editorTitle")?.value.trim()   || "";
   const content = document.getElementById("editorContent")?.value.trim() || "";
@@ -943,7 +1101,29 @@ function saveJournalEntry() {
     logActivity("journal", "Wrote journal entry" + (title ? ': "' + title + '"' : ""));
   }
 
-  saveJournalEntries(entries);
+  // Try backend first
+  const payload = {
+    title,
+    content,
+    date,
+    moodEmoji: editorMoodTag?.emoji || "",
+    moodName: editorMoodTag?.name || "",
+    ...(id && { id }) // include id for updates
+  };
+
+  const result = await apiRequest(id ? '/journal/' + id : '/journal', id ? 'PUT' : 'POST', payload);
+  
+  if (result) {
+    // Backend saved successfully, sync journal entries from backend
+    const updatedEntries = await apiRequest('/journal', 'GET');
+    if (updatedEntries) {
+      saveUserData('journal', updatedEntries);
+    }
+  } else {
+    // Backend failed, save to localStorage
+    saveJournalEntries(entries);
+  }
+
   renderJournalList();
   updateDashboardStats();
   setEl("editorSaveStatus", "Saved ✓ " + formatTime(new Date()));
@@ -958,7 +1138,6 @@ function clearAllJournalEntries() {
   updateDashboardStats();
   showToast("Journal cleared.");
 }
-
 
 /* ─────────────────────────────────────────────────────
    9. CALENDAR
@@ -1101,7 +1280,6 @@ function addJournalForCalDate() {
   }, 200);
 }
 
-
 /* ─────────────────────────────────────────────────────
    10. HISTORY
 ───────────────────────────────────────────────────── */
@@ -1231,7 +1409,6 @@ function clearActivityLog() {
   showToast("Activity log cleared.");
 }
 
-
 /* ─────────────────────────────────────────────────────
    11. RESOURCES
 ───────────────────────────────────────────────────── */
@@ -1287,7 +1464,6 @@ function resourceAction(id) {
   }, 150);
 }
 
-
 /* ─────────────────────────────────────────────────────
    12. ABOUT (FAQ)
 ───────────────────────────────────────────────────── */
@@ -1311,7 +1487,6 @@ function toggleFAQ(i) {
   if (!item) return;
   item.classList.toggle("open");
 }
-
 
 /* ─────────────────────────────────────────────────────
    13. SETTINGS  (font fix included)
@@ -1464,7 +1639,6 @@ function applySettings() {
   if (br) br.checked = !!s.breathingReminder;
 }
 
-
 /* ─────────────────────────────────────────────────────
    14. ACTIVITY LOGGING
 ───────────────────────────────────────────────────── */
@@ -1478,7 +1652,6 @@ function logActivity(type, text) {
   // Keep last 200 entries
   saveUserData("activity", activity.slice(-200));
 }
-
 
 /* ─────────────────────────────────────────────────────
    15. STORAGE HELPERS
@@ -1509,7 +1682,6 @@ function loadSettingsFromStorage() {
     if (s) state.settings = Object.assign({}, state.settings, s);
   } catch (e) { /* ignore */ }
 }
-
 
 /* ─────────────────────────────────────────────────────
    16. UTILITY HELPERS
