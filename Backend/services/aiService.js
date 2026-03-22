@@ -16,19 +16,24 @@ const getTherapistResponse = async (userMessage, conversationHistory = []) => {
       throw new Error('Invalid user message');
     }
 
-    // Intent detection
+    // Intent detection with improved patterns
     const lowerMessage = userMessage.toLowerCase();
     let mode = 'emotional support'; // default mode
-    if (/\b(how|guide|help|steps)\b/.test(lowerMessage)) {
+
+    // Guidance mode: user asks for instructions, steps, or help with a task
+    if (/(how to|how do i|guide|steps|step by step|procedure|process|tutorial|instructions|learn|teach|show me|explain how)\b/.test(lowerMessage) ||
+        /^(help|how|guide|steps)\b/.test(lowerMessage)) {
       mode = 'guidance';
-    } else if (/\b(advice|suggest|recommend)\b/.test(lowerMessage)) {
+    } 
+    // Advice mode: user asks for suggestions or recommendations
+    else if (/\b(advice|suggest|recommend|tip|suggestion)\b/.test(lowerMessage)) {
       mode = 'advice';
     }
 
     // Mode-specific instructions
     const modeInstructions = {
       'emotional support': `You are an empathetic therapist. Your primary goal is to provide emotional support, validation, and active listening. Listen carefully and reflect the user's feelings. Do not give advice unless explicitly asked.`,
-      'guidance': `You are a guide. Your primary goal is to provide clear, step-by-step instructions. Break down complex processes into simple, actionable steps. Be patient and thorough.`,
+      'guidance': `You are a guide. Your primary goal is to provide clear, step-by-step instructions. Break down complex processes into simple, actionable steps. Be patient and thorough. IMPORTANT: Format your response as a numbered list of steps. Each step should be concise and actionable.`,
       'advice': `You are an advisor. Your primary goal is to provide practical, actionable suggestions. Be concise and direct. Focus on solutions.`
     };
 
