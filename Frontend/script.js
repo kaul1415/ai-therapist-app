@@ -32,27 +32,27 @@ const loadedFonts = new Set(["DM Sans"]);
 
 // Google Fonts URL map for supported font families
 const FONT_URLS = {
-  "Nunito":    "https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600&display=swap",
-  "Lora":      "https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&display=swap",
-  "Raleway":   "https://fonts.googleapis.com/css2?family=Raleway:wght@300;400;500;600&display=swap",
+  "Nunito": "https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600&display=swap",
+  "Lora": "https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&display=swap",
+  "Raleway": "https://fonts.googleapis.com/css2?family=Raleway:wght@300;400;500;600&display=swap",
   "Quicksand": "https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600&display=swap",
 };
 
 // App state — everything lives here
 const state = {
-  currentPage:    "dashboard",
-  sessionId:      null,          // active chat session ID (from backend)
-  chatMode:       "advice",
-  currentUser:    null,          // { id, name, email, createdAt }
+  currentPage: "dashboard",
+  sessionId: null,          // active chat session ID (from backend)
+  chatMode: "advice",
+  currentUser: null,          // { id, name, email, createdAt }
   settings: {
-    darkMode:           false,
-    fontFamily:         "DM Sans",
-    fontSize:           16,
-    accentColor:        "#3CBFA0",
-    defaultMode:        "advice",
-    showTyping:         true,
-    moodReminder:       false,
-    breathingReminder:  false,
+    darkMode: false,
+    fontFamily: "DM Sans",
+    fontSize: 16,
+    accentColor: "#3CBFA0",
+    defaultMode: "advice",
+    showTyping: true,
+    moodReminder: false,
+    breathingReminder: false,
   },
   backendAvailable: false,       // Track if backend is reachable
 };
@@ -60,14 +60,14 @@ const state = {
 // Selected mood on mood page (temp)
 let selectedMoodData = null;
 // Selected journal entry ID being edited
-let editingEntryId   = null;
+let editingEntryId = null;
 // Selected mood tag in journal editor
-let editorMoodTag    = null;
+let editorMoodTag = null;
 // Calendar state
-let calYear  = new Date().getFullYear();
+let calYear = new Date().getFullYear();
 let calMonth = new Date().getMonth();
 // Selected calendar date (YYYY-MM-DD)
-let selectedCalDate  = null;
+let selectedCalDate = null;
 // Resource filter
 let currentResourceFilter = "all";
 // Current history tab
@@ -113,25 +113,25 @@ const JOURNAL_PROMPTS = [
 ];
 
 const RESOURCES_DATA = [
-  { id:1, category:"breathing", icon:"🌬️", iconBg:"rgba(60,191,160,0.12)", iconColor:"var(--mint)", title:"Box Breathing", tag:"Breathing", tagBg:"rgba(60,191,160,0.12)", tagColor:"var(--mint-d)", text:"Inhale for 4 counts, hold 4, exhale 4, hold 4. Repeat 4 times. Activates your parasympathetic nervous system and calms anxiety within minutes.", meta:"2–4 minutes", action:"Try It" },
-  { id:2, category:"breathing", icon:"🫁", iconBg:"rgba(107,184,232,0.12)", iconColor:"var(--sky)", title:"4-7-8 Breathing", tag:"Breathing", tagBg:"rgba(107,184,232,0.12)", tagColor:"var(--sky)", text:"Breathe in 4, hold 7, exhale slowly 8. Especially effective for falling asleep or calming down quickly.", meta:"3 minutes", action:"Learn More" },
-  { id:3, category:"anxiety", icon:"🧘", iconBg:"rgba(255,140,107,0.12)", iconColor:"var(--peach)", title:"5-4-3-2-1 Grounding", tag:"Anxiety", tagBg:"rgba(255,140,107,0.12)", tagColor:"var(--peach)", text:"Name 5 things you see, 4 you can touch, 3 you hear, 2 you smell, 1 you taste. Interrupts anxious thought spirals immediately.", meta:"3–5 minutes", action:"Try It" },
-  { id:4, category:"anxiety", icon:"✍️", iconBg:"rgba(60,191,160,0.12)", iconColor:"var(--mint)", title:"Thought Journaling", tag:"Anxiety", tagBg:"rgba(60,191,160,0.12)", tagColor:"var(--mint-d)", text:"Write anxious thoughts, then ask: Is this fact or assumption? What's the realistic outcome? Rewires negative thought patterns over time.", meta:"5–10 minutes", action:"Start Writing" },
-  { id:5, category:"sleep", icon:"😴", iconBg:"rgba(245,197,24,0.12)", iconColor:"var(--amber)", title:"Wind-Down Routine", tag:"Sleep", tagBg:"rgba(245,197,24,0.12)", tagColor:"#9a7a00", text:"Avoid screens 30–60 minutes before bed. Read, stretch, or listen to calm music. Consistency signals your brain that sleep is coming.", meta:"30–60 min before bed", action:"Learn More" },
-  { id:6, category:"sleep", icon:"🌡️", iconBg:"rgba(107,184,232,0.12)", iconColor:"var(--sky)", title:"Military Sleep Method", tag:"Sleep", tagBg:"rgba(107,184,232,0.12)", tagColor:"var(--sky)", text:"Relax face muscles, drop shoulders, let arms go limp, clear your mind for 10 seconds. Reportedly helps most people sleep within 2 minutes.", meta:"2–5 minutes", action:"Try It" },
-  { id:7, category:"stress", icon:"💆", iconBg:"rgba(255,140,107,0.12)", iconColor:"var(--peach)", title:"Progressive Muscle Relaxation", tag:"Stress", tagBg:"rgba(255,140,107,0.12)", tagColor:"var(--peach)", text:"Tense each muscle group for 5 seconds, then release for 30. Start at your feet, work up to your face. Releases physical tension from chronic stress.", meta:"10–15 minutes", action:"Start Now" },
-  { id:8, category:"stress", icon:"🚶", iconBg:"rgba(60,191,160,0.12)", iconColor:"var(--mint)", title:"10-Minute Mindful Walk", tag:"Stress", tagBg:"rgba(60,191,160,0.12)", tagColor:"var(--mint-d)", text:"Walk outside and focus only on what you see, hear, feel. No phone. Even a brief nature walk lowers cortisol by up to 15% and boosts mood for hours.", meta:"10 minutes", action:"Go Outside" },
-  { id:9, category:"motivation", icon:"⭐", iconBg:"rgba(245,197,24,0.12)", iconColor:"var(--amber)", title:"The 2-Minute Rule", tag:"Motivation", tagBg:"rgba(245,197,24,0.12)", tagColor:"#9a7a00", text:"If it takes under 2 minutes, do it now. For bigger tasks, just commit to starting for 2 minutes. Getting started is the hardest part.", meta:"Ongoing habit", action:"Apply It" },
-  { id:10, category:"motivation", icon:"🎯", iconBg:"rgba(60,191,160,0.12)", iconColor:"var(--mint)", title:"Identity-Based Habits", tag:"Motivation", tagBg:"rgba(60,191,160,0.12)", tagColor:"var(--mint-d)", text:"Instead of 'I want to exercise,' say 'I am someone who moves their body.' Identity shifts are more powerful than willpower alone.", meta:"Long-term practice", action:"Learn More" },
+  { id: 1, category: "breathing", icon: "🌬️", iconBg: "rgba(60,191,160,0.12)", iconColor: "var(--mint)", title: "Box Breathing", tag: "Breathing", tagBg: "rgba(60,191,160,0.12)", tagColor: "var(--mint-d)", text: "Inhale for 4 counts, hold 4, exhale 4, hold 4. Repeat 4 times. Activates your parasympathetic nervous system and calms anxiety within minutes.", meta: "2–4 minutes", action: "Try It" },
+  { id: 2, category: "breathing", icon: "🫁", iconBg: "rgba(107,184,232,0.12)", iconColor: "var(--sky)", title: "4-7-8 Breathing", tag: "Breathing", tagBg: "rgba(107,184,232,0.12)", tagColor: "var(--sky)", text: "Breathe in 4, hold 7, exhale slowly 8. Especially effective for falling asleep or calming down quickly.", meta: "3 minutes", action: "Learn More" },
+  { id: 3, category: "anxiety", icon: "🧘", iconBg: "rgba(255,140,107,0.12)", iconColor: "var(--peach)", title: "5-4-3-2-1 Grounding", tag: "Anxiety", tagBg: "rgba(255,140,107,0.12)", tagColor: "var(--peach)", text: "Name 5 things you see, 4 you can touch, 3 you hear, 2 you smell, 1 you taste. Interrupts anxious thought spirals immediately.", meta: "3–5 minutes", action: "Try It" },
+  { id: 4, category: "anxiety", icon: "✍️", iconBg: "rgba(60,191,160,0.12)", iconColor: "var(--mint)", title: "Thought Journaling", tag: "Anxiety", tagBg: "rgba(60,191,160,0.12)", tagColor: "var(--mint-d)", text: "Write anxious thoughts, then ask: Is this fact or assumption? What's the realistic outcome? Rewires negative thought patterns over time.", meta: "5–10 minutes", action: "Start Writing" },
+  { id: 5, category: "sleep", icon: "😴", iconBg: "rgba(245,197,24,0.12)", iconColor: "var(--amber)", title: "Wind-Down Routine", tag: "Sleep", tagBg: "rgba(245,197,24,0.12)", tagColor: "#9a7a00", text: "Avoid screens 30–60 minutes before bed. Read, stretch, or listen to calm music. Consistency signals your brain that sleep is coming.", meta: "30–60 min before bed", action: "Learn More" },
+  { id: 6, category: "sleep", icon: "🌡️", iconBg: "rgba(107,184,232,0.12)", iconColor: "var(--sky)", title: "Military Sleep Method", tag: "Sleep", tagBg: "rgba(107,184,232,0.12)", tagColor: "var(--sky)", text: "Relax face muscles, drop shoulders, let arms go limp, clear your mind for 10 seconds. Reportedly helps most people sleep within 2 minutes.", meta: "2–5 minutes", action: "Try It" },
+  { id: 7, category: "stress", icon: "💆", iconBg: "rgba(255,140,107,0.12)", iconColor: "var(--peach)", title: "Progressive Muscle Relaxation", tag: "Stress", tagBg: "rgba(255,140,107,0.12)", tagColor: "var(--peach)", text: "Tense each muscle group for 5 seconds, then release for 30. Start at your feet, work up to your face. Releases physical tension from chronic stress.", meta: "10–15 minutes", action: "Start Now" },
+  { id: 8, category: "stress", icon: "🚶", iconBg: "rgba(60,191,160,0.12)", iconColor: "var(--mint)", title: "10-Minute Mindful Walk", tag: "Stress", tagBg: "rgba(60,191,160,0.12)", tagColor: "var(--mint-d)", text: "Walk outside and focus only on what you see, hear, feel. No phone. Even a brief nature walk lowers cortisol by up to 15% and boosts mood for hours.", meta: "10 minutes", action: "Go Outside" },
+  { id: 9, category: "motivation", icon: "⭐", iconBg: "rgba(245,197,24,0.12)", iconColor: "var(--amber)", title: "The 2-Minute Rule", tag: "Motivation", tagBg: "rgba(245,197,24,0.12)", tagColor: "#9a7a00", text: "If it takes under 2 minutes, do it now. For bigger tasks, just commit to starting for 2 minutes. Getting started is the hardest part.", meta: "Ongoing habit", action: "Apply It" },
+  { id: 10, category: "motivation", icon: "🎯", iconBg: "rgba(60,191,160,0.12)", iconColor: "var(--mint)", title: "Identity-Based Habits", tag: "Motivation", tagBg: "rgba(60,191,160,0.12)", tagColor: "var(--mint-d)", text: "Instead of 'I want to exercise,' say 'I am someone who moves their body.' Identity shifts are more powerful than willpower alone.", meta: "Long-term practice", action: "Learn More" },
 ];
 
 const FAQ_DATA = [
-  { q:"Is MindBloom a replacement for therapy?", a:"No. MindBloom is a wellness support tool for everyday emotional self-care. If you're experiencing serious mental health issues, please seek help from a licensed professional or call a crisis line. Bloom can be a helpful complement to therapy, but not a substitute." },
-  { q:"Who sees my chats and journal entries?", a:"Your journal entries and mood logs are stored only in your browser's local storage — they never leave your device. Chat messages are sent to the AI backend for processing but are not permanently stored on any server. MindBloom does not sell or share your data." },
-  { q:"What's the difference between the three chat modes?", a:"Vent Mode: Bloom just listens — no advice, no suggestions. Perfect for when you need to let it all out. Advice Mode: Bloom offers practical coping strategies and perspectives. Clarity Mode: Bloom asks thoughtful questions to help you think through situations yourself." },
-  { q:"Can I lose my journal entries if I clear my browser?", a:"Yes — since journal entries are stored in localStorage, clearing your browser data will delete them. We recommend copying important entries to a notes app as a backup. Future versions of MindBloom will support cloud backup." },
-  { q:"What if I'm in a mental health crisis?", a:"Please reach out to a crisis helpline immediately. In the Resources page, you'll find a direct link to findahelpline.com which lists crisis services in your country. MindBloom's AI is not equipped to handle emergencies." },
-  { q:"How do I get the most out of MindBloom?", a:"Use it daily — even for just 5 minutes. Log your mood in the morning. Write a short journal entry at night. Chat with Bloom when something's on your mind. Over time, the patterns you discover about yourself become the most valuable part." },
+  { q: "Is MindBloom a replacement for therapy?", a: "No. MindBloom is a wellness support tool for everyday emotional self-care. If you're experiencing serious mental health issues, please seek help from a licensed professional or call a crisis line. Bloom can be a helpful complement to therapy, but not a substitute." },
+  { q: "Who sees my chats and journal entries?", a: "Your journal entries and mood logs are stored only in your browser's local storage — they never leave your device. Chat messages are sent to the AI backend for processing but are not permanently stored on any server. MindBloom does not sell or share your data." },
+  { q: "What's the difference between the three chat modes?", a: "Vent Mode: Bloom just listens — no advice, no suggestions. Perfect for when you need to let it all out. Advice Mode: Bloom offers practical coping strategies and perspectives. Clarity Mode: Bloom asks thoughtful questions to help you think through situations yourself." },
+  { q: "Can I lose my journal entries if I clear my browser?", a: "Yes — since journal entries are stored in localStorage, clearing your browser data will delete them. We recommend copying important entries to a notes app as a backup. Future versions of MindBloom will support cloud backup." },
+  { q: "What if I'm in a mental health crisis?", a: "Please reach out to a crisis helpline immediately. In the Resources page, you'll find a direct link to findahelpline.com which lists crisis services in your country. MindBloom's AI is not equipped to handle emergencies." },
+  { q: "How do I get the most out of MindBloom?", a: "Use it daily — even for just 5 minutes. Log your mood in the morning. Write a short journal entry at night. Chat with Bloom when something's on your mind. Over time, the patterns you discover about yourself become the most valuable part." },
 ];
 
 const DEMO_RESPONSES = {
@@ -275,7 +275,7 @@ async function apiRequest(endpoint, method = 'GET', body = null) {
   const headers = {
     'Content-Type': 'application/json',
   };
-  
+
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
@@ -285,29 +285,29 @@ async function apiRequest(endpoint, method = 'GET', body = null) {
       method,
       headers,
     };
-    
+
     if (body) {
       options.body = JSON.stringify(body);
     }
 
     const res = await fetch(API_BASE + endpoint, options);
-    
+
     if (res.status === 401) {
       // Token invalid or expired
       doLogout();
       showToast("Session expired. Please log in again.");
       return null;
     }
-    
+
     if (!res.ok) {
       const errorData = await res.json().catch(() => ({}));
       throw new Error(errorData.message || `HTTP ${res.status}`);
     }
-    
+
     // Mark backend as available
     state.backendAvailable = true;
     return await res.json();
-    
+
   } catch (error) {
     console.error('API request failed:', error);
     state.backendAvailable = false;
@@ -364,7 +364,7 @@ async function syncUserDataFromBackend() {
 ───────────────────────────────────────────────────── */
 
 function showAuthScreen() { document.getElementById("authScreen").classList.remove("hidden"); document.getElementById("app").classList.add("hidden"); }
-function hideAuthScreen()  { document.getElementById("authScreen").classList.add("hidden"); document.getElementById("app").classList.remove("hidden"); }
+function hideAuthScreen() { document.getElementById("authScreen").classList.add("hidden"); document.getElementById("app").classList.remove("hidden"); }
 
 function switchAuthTab(tab) {
   document.getElementById("loginForm").classList.toggle("hidden", tab !== "login");
@@ -375,7 +375,7 @@ function switchAuthTab(tab) {
 }
 
 function clearAuthErrors() {
-  ["loginErr","signupErr"].forEach(function (id) {
+  ["loginErr", "signupErr"].forEach(function (id) {
     const el = document.getElementById(id);
     if (el) { el.textContent = ""; el.classList.add("hidden"); }
   });
@@ -411,7 +411,7 @@ function checkPasswordStrength() {
  */
 async function doLogin() {
   clearAuthErrors();
-  const email    = (document.getElementById("loginEmail").value || "").trim().toLowerCase();
+  const email = (document.getElementById("loginEmail").value || "").trim().toLowerCase();
   const password = (document.getElementById("loginPassword").value || "");
   if (!email || !password) return showAuthError("loginErr", "Please fill in all fields.");
   if (!isValidEmail(email)) return showAuthError("loginErr", "Please enter a valid email address.");
@@ -421,11 +421,11 @@ async function doLogin() {
 
   try {
     const result = await apiRequest('/auth/login', 'POST', { email, password });
-    
+
     if (!result) {
       // Backend failed, fallback to localStorage
       const users = getAllUsers();
-      const user  = users.find(function (u) { return u.email === email && u.password === password; });
+      const user = users.find(function (u) { return u.email === email && u.password === password; });
       if (!user) {
         showAuthError("loginErr", "Incorrect email or password. Please try again.");
         return;
@@ -459,23 +459,23 @@ async function doLogin() {
  */
 async function doSignup() {
   clearAuthErrors();
-  const name     = (document.getElementById("signupName").value     || "").trim();
-  const email    = (document.getElementById("signupEmail").value    || "").trim().toLowerCase();
+  const name = (document.getElementById("signupName").value || "").trim();
+  const email = (document.getElementById("signupEmail").value || "").trim().toLowerCase();
   const password = (document.getElementById("signupPassword").value || "");
-  const confirm  = (document.getElementById("signupConfirm").value  || "");
+  const confirm = (document.getElementById("signupConfirm").value || "");
 
   if (!name || !email || !password || !confirm) return showAuthError("signupErr", "Please fill in all fields.");
-  if (name.length < 2)        return showAuthError("signupErr", "Name must be at least 2 characters.");
-  if (!isValidEmail(email))   return showAuthError("signupErr", "Please enter a valid email address.");
-  if (password.length < 8)    return showAuthError("signupErr", "Password must be at least 8 characters.");
-  if (password !== confirm)   return showAuthError("signupErr", "Passwords do not match.");
+  if (name.length < 2) return showAuthError("signupErr", "Name must be at least 2 characters.");
+  if (!isValidEmail(email)) return showAuthError("signupErr", "Please enter a valid email address.");
+  if (password.length < 8) return showAuthError("signupErr", "Password must be at least 8 characters.");
+  if (password !== confirm) return showAuthError("signupErr", "Passwords do not match.");
 
   const btn = document.getElementById("signupBtn");
   btn.disabled = true; btn.textContent = "Creating account...";
 
   try {
     const result = await apiRequest('/auth/register', 'POST', { name, email, password });
-    
+
     if (!result) {
       // Backend failed, fallback to localStorage
       const users = getAllUsers();
@@ -483,7 +483,7 @@ async function doSignup() {
         showAuthError("signupErr", "An account with this email already exists.");
         return;
       }
-      const newUser = { id:"user_"+Date.now(), name, email, password, createdAt: new Date().toISOString() };
+      const newUser = { id: "user_" + Date.now(), name, email, password, createdAt: new Date().toISOString() };
       users.push(newUser);
       saveAllUsers(users);
       state.currentUser = newUser;
@@ -515,7 +515,7 @@ function doLogout() {
   localStorage.removeItem('token');
   clearSession();
   state.currentUser = null;
-  state.sessionId   = null;
+  state.sessionId = null;
   showAuthScreen();
   // Reset page to dashboard for next login
   state.currentPage = "dashboard";
@@ -534,19 +534,19 @@ function navigate(pageName) {
     item.classList.toggle("active", item.dataset.page === pageName);
   });
 
-  const titles = { dashboard:"Dashboard", chat:"Chat with Bloom", mood:"Mood Tracker", journal:"Journal", calendar:"Calendar", history:"History", resources:"Resources", about:"About", settings:"Settings" };
+  const titles = { dashboard: "Dashboard", chat: "Chat with Bloom", mood: "Mood Tracker", journal: "Journal", calendar: "Calendar", history: "History", resources: "Resources", about: "About", settings: "Settings" };
   const t = document.getElementById("topbarTitle");
   if (t) t.textContent = titles[pageName] || pageName;
 
   state.currentPage = pageName;
   closeSidebar();
 
-  if (pageName === "chat")     { setTimeout(function () { const i = document.getElementById("chatInput"); if (i) i.focus(); }, 100); }
+  if (pageName === "chat") { setTimeout(function () { const i = document.getElementById("chatInput"); if (i) i.focus(); }, 100); }
   if (pageName === "dashboard") { updateDashboardStats(); renderDashActivity(); }
-  if (pageName === "history")   { renderChatHistory(); renderActivityLog(); }
-  if (pageName === "calendar")  { renderCalendar(calYear, calMonth); }
-  if (pageName === "journal")   { renderJournalList(); }
-  if (pageName === "mood")      { renderMoodLogList(); updateMoodPageStats(); }
+  if (pageName === "history") { renderChatHistory(); renderActivityLog(); }
+  if (pageName === "calendar") { renderCalendar(calYear, calMonth); }
+  if (pageName === "journal") { renderJournalList(); }
+  if (pageName === "mood") { renderMoodLogList(); updateMoodPageStats(); }
 }
 
 /* ─────────────────────────────────────────────────────
@@ -561,8 +561,8 @@ function setGreeting() {
 }
 
 function setDailyTip() {
-  const day = Math.floor((new Date() - new Date(new Date().getFullYear(),0,0)) / 86400000);
-  const el  = document.getElementById("dailyTip");
+  const day = Math.floor((new Date() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
+  const el = document.getElementById("dailyTip");
   if (el) el.textContent = DAILY_TIPS[day % DAILY_TIPS.length];
 }
 
@@ -574,15 +574,15 @@ function setDashPrompt() {
 function updateDashboardStats() {
   const uid = state.currentUser?.id;
   if (!uid) return;
-  const moods   = loadUserData("moods")    || [];
-  const entries = loadUserData("journal")  || [];
-  const chats   = loadUserData("chatSessions") || [];
-  const streak  = calcStreak(moods);
+  const moods = loadUserData("moods") || [];
+  const entries = loadUserData("journal") || [];
+  const chats = loadUserData("chatSessions") || [];
+  const streak = calcStreak(moods);
 
-  setEl("dashStreak",   streak);
+  setEl("dashStreak", streak);
   setEl("dashSessions", chats.length);
   setEl("dashJournals", entries.length);
-  setEl("dashMoods",    moods.length);
+  setEl("dashMoods", moods.length);
 
   const streakEl = document.getElementById("sidebarStreak");
   if (streakEl) streakEl.textContent = "🔥 " + streak + " day streak";
@@ -607,15 +607,15 @@ function renderDashActivity() {
 }
 
 function updateStreakDisplay() {
-  const moods  = loadUserData("moods") || [];
+  const moods = loadUserData("moods") || [];
   const streak = calcStreak(moods);
   const el = document.getElementById("sidebarStreak");
   if (el) el.textContent = "🔥 " + streak + " day streak";
 }
 
 function quickMood(name, emoji) {
-  const scoreMap = { Great:5, Good:4, Okay:3, Sad:2, Stressed:1 };
-  const entry = { name, emoji, score: scoreMap[name]||3, note:"", time: new Date().toISOString(), timeStr: formatTime(new Date()) };
+  const scoreMap = { Great: 5, Good: 4, Okay: 3, Sad: 2, Stressed: 1 };
+  const entry = { name, emoji, score: scoreMap[name] || 3, note: "", time: new Date().toISOString(), timeStr: formatTime(new Date()) };
   const moods = loadUserData("moods") || [];
   moods.push(entry);
   saveUserData("moods", moods);
@@ -634,8 +634,8 @@ function quickMood(name, emoji) {
 async function createChatSession() {
   const display = document.getElementById("sessionIdDisplay");
   try {
-    const result = await apiRequest('/chat/sessions', 'POST', { title:"New session" });
-    
+    const result = await apiRequest('/chat/sessions', 'POST', { title: "New session" });
+
     if (!result) {
       // Backend failed, use local session ID
       state.sessionId = "local-" + Date.now();
@@ -679,7 +679,7 @@ function saveCurrentChatToHistory() {
   rows.forEach(function (row) {
     const isUser = row.classList.contains("user-row");
     const bubble = row.querySelector(".msg-bubble");
-    const time   = row.querySelector(".msg-time");
+    const time = row.querySelector(".msg-time");
     if (bubble) {
       messages.push({
         role: isUser ? "user" : "ai",
@@ -696,13 +696,13 @@ function saveCurrentChatToHistory() {
 
   const sessions = loadUserData("chatSessions") || [];
   sessions.unshift({
-    id:        state.sessionId || ("local-" + Date.now()),
-    title:     title,
-    mode:      state.chatMode,
-    messages:  messages,
+    id: state.sessionId || ("local-" + Date.now()),
+    title: title,
+    mode: state.chatMode,
+    messages: messages,
     createdAt: new Date().toISOString(),
-    timeStr:   formatDateShort(new Date()),
-    msgCount:  messages.length,
+    timeStr: formatDateShort(new Date()),
+    msgCount: messages.length,
   });
   // Keep last 50 sessions
   saveUserData("chatSessions", sessions.slice(0, 50));
@@ -712,7 +712,7 @@ function setChatMode(mode, btn) {
   state.chatMode = mode;
   document.querySelectorAll(".mode-btn").forEach(function (b) { b.classList.remove("active"); });
   if (btn) btn.classList.add("active");
-  const labels = { advice:"💡 Advice Mode", vent:"🌊 Vent Mode", clarity:"🔮 Clarity Mode" };
+  const labels = { advice: "💡 Advice Mode", vent: "🌊 Vent Mode", clarity: "🔮 Clarity Mode" };
   const ml = document.getElementById("sessionModeLabel");
   if (ml) ml.textContent = labels[mode] || mode;
 }
@@ -730,7 +730,7 @@ function handleChatKey(e) {
 }
 
 function updateCharCount() {
-  const input   = document.getElementById("chatInput");
+  const input = document.getElementById("chatInput");
   const counter = document.getElementById("charCount");
   if (!input || !counter) return;
   const len = input.value.length;
@@ -745,7 +745,7 @@ function autoGrow(el) {
 }
 
 async function sendMessage() {
-  const input  = document.getElementById("chatInput");
+  const input = document.getElementById("chatInput");
   const sndBtn = document.getElementById("sendBtn");
   if (!input) return;
   const text = input.value.trim();
@@ -767,7 +767,7 @@ async function sendMessage() {
 
   try {
     const result = await apiRequest('/chat/sessions/' + state.sessionId + '/messages', 'POST', { message: text, mode: state.chatMode });
-    
+
     if (!result) {
       // Backend failed, use demo response
       if (typingEl) typingEl.remove();
@@ -779,7 +779,20 @@ async function sendMessage() {
     } else {
       // Backend success
       if (typingEl) typingEl.remove();
-      const reply = result.reply || result.message || result.content || result.response || result.data?.reply || "I'm here. Tell me more.";
+      console.log("Backend response:", result);
+
+      const reply =
+        result?.reply ||
+        result?.message ||
+        result?.content ||
+        result?.response ||
+        result?.data?.reply ||
+        result?.data?.message?.content ||
+        result?.data?.content ||
+        result?.aiMessage?.content ||
+        result?.message?.content ||
+        result?.data?.aiMessage?.content ||
+        "I'm here to listen. Could you tell me more?";
       addChatMessage(reply, "ai");
       logActivity("chat", "Chatted with Bloom (" + state.chatMode + " mode)");
     }
@@ -800,12 +813,12 @@ function addChatMessage(text, role) {
   const area = document.getElementById("messagesArea");
   if (!area) return;
   const isUser = role === "user";
-  const init   = (state.currentUser?.name || "U").charAt(0).toUpperCase();
+  const init = (state.currentUser?.name || "U").charAt(0).toUpperCase();
   area.insertAdjacentHTML("beforeend", `
     <div class="message-row ${isUser ? "user-row" : "ai-row"}">
       <div class="msg-avatar ${isUser ? "user-avatar" : "ai-avatar"}">${isUser ? init : "🌿"}</div>
       <div class="msg-col">
-        <div class="msg-bubble ${isUser ? "user-bubble" : "ai-bubble"}">${escHtml(text).replace(/\n/g,"<br/>")}</div>
+        <div class="msg-bubble ${isUser ? "user-bubble" : "ai-bubble"}">${escHtml(text).replace(/\n/g, "<br/>")}</div>
         <div class="msg-time">${formatTime(new Date())}</div>
       </div>
     </div>`);
@@ -841,7 +854,7 @@ async function selectMood(btn) {
   document.querySelectorAll(".mood-btn").forEach(function (b) { b.classList.remove("selected"); });
   btn.classList.add("selected");
   const emoji = btn.querySelector(".mood-emoji").textContent;
-  const name  = btn.querySelector(".mood-name").textContent;
+  const name = btn.querySelector(".mood-name").textContent;
   const score = parseInt(btn.dataset.score) || 3;
   selectedMoodData = { emoji, name, score };
   const d = document.getElementById("selectedMoodDisplay");
@@ -856,12 +869,12 @@ async function selectMood(btn) {
 
 async function logMood() {
   if (!selectedMoodData) return showToast("Please select a mood first!");
-  const note  = (document.getElementById("moodNote")?.value || "").trim();
+  const note = (document.getElementById("moodNote")?.value || "").trim();
   const entry = { ...selectedMoodData, note, time: new Date().toISOString(), timeStr: formatTime(new Date()) };
-  
+
   // Try backend first
   const result = await apiRequest('/mood', 'POST', entry);
-  
+
   if (result) {
     // Backend saved successfully, sync moods from backend
     const updatedMoods = await apiRequest('/mood', 'GET');
@@ -882,14 +895,14 @@ async function logMood() {
   updateDashboardStats();
   updateStreakDisplay();
   logActivity("mood", "Logged mood: " + entry.name + " " + entry.emoji);
-  
+
   // Reset UI
   document.querySelectorAll(".mood-btn").forEach(function (b) { b.classList.remove("selected"); });
   const d = document.getElementById("selectedMoodDisplay"); if (d) d.classList.add("hidden");
   const noteInput = document.getElementById("moodNote"); if (noteInput) noteInput.value = "";
   const lb = document.getElementById("logMoodBtn"); if (lb) lb.disabled = true;
   selectedMoodData = null;
-  
+
   showToast(entry.emoji + " Mood logged: " + entry.name);
 }
 
@@ -928,7 +941,7 @@ function updateMoodPageStats() {
 function getTopMoodEmoji(moods) {
   if (!moods || moods.length === 0) return "";
   const counts = {};
-  moods.forEach(function (m) { counts[m.name] = (counts[m.name]||0)+1; });
+  moods.forEach(function (m) { counts[m.name] = (counts[m.name] || 0) + 1; });
   let top = ""; let max = 0;
   Object.keys(counts).forEach(function (n) { if (counts[n] > max) { max = counts[n]; top = n; } });
   const found = moods.find(function (m) { return m.name === top; });
@@ -955,8 +968,8 @@ function setJournalWelcomePrompt() {
 }
 
 function renderJournalList() {
-  const entries   = getJournalEntries();
-  const query     = (document.getElementById("journalSearch")?.value || "").toLowerCase();
+  const entries = getJournalEntries();
+  const query = (document.getElementById("journalSearch")?.value || "").toLowerCase();
   const container = document.getElementById("journalEntryList");
   if (!container) return;
 
@@ -964,8 +977,8 @@ function renderJournalList() {
   if (query) {
     filtered = entries.filter(function (e) {
       return e.title.toLowerCase().includes(query) ||
-             e.content.toLowerCase().includes(query) ||
-             (e.moodName && e.moodName.toLowerCase().includes(query));
+        e.content.toLowerCase().includes(query) ||
+        (e.moodName && e.moodName.toLowerCase().includes(query));
     });
   }
 
@@ -977,7 +990,7 @@ function renderJournalList() {
   // Show newest first
   container.innerHTML = filtered.slice().reverse().map(function (entry) {
     const isActive = editingEntryId === entry.id;
-    const preview  = entry.content ? entry.content.slice(0, 60).replace(/\n/g, " ") : "";
+    const preview = entry.content ? entry.content.slice(0, 60).replace(/\n/g, " ") : "";
     return `<div class="je-item ${isActive ? "active" : ""}" onclick="openJournalEditor('${entry.id}')">
       <div class="je-date">${formatDateShort(new Date(entry.date || entry.createdAt))}</div>
       <div class="je-title">${entry.title ? escHtml(entry.title) : "<em>Untitled entry</em>"}</div>
@@ -989,7 +1002,7 @@ function renderJournalList() {
 
 function openJournalEditor(entryId) {
   editingEntryId = entryId;
-  editorMoodTag  = null;
+  editorMoodTag = null;
 
   // Show editor, hide welcome
   document.getElementById("journalWelcome").classList.add("hidden");
@@ -1007,8 +1020,8 @@ function openJournalEditor(entryId) {
     // Editing existing entry
     const entry = getJournalEntries().find(function (e) { return e.id === entryId; });
     if (!entry) return;
-    document.getElementById("editorDate").value    = entry.date || todayStr();
-    document.getElementById("editorTitle").value   = entry.title || "";
+    document.getElementById("editorDate").value = entry.date || todayStr();
+    document.getElementById("editorTitle").value = entry.title || "";
     document.getElementById("editorContent").value = entry.content || "";
     document.getElementById("editorEntryId").value = entryId;
     // Restore mood tag
@@ -1024,8 +1037,8 @@ function openJournalEditor(entryId) {
     setEl("editorSaveStatus", "Editing entry");
   } else {
     // New entry
-    document.getElementById("editorDate").value    = todayStr();
-    document.getElementById("editorTitle").value   = "";
+    document.getElementById("editorDate").value = todayStr();
+    document.getElementById("editorTitle").value = "";
     document.getElementById("editorContent").value = "";
     document.getElementById("editorEntryId").value = "";
     document.querySelectorAll(".mood-tag").forEach(function (t) { t.classList.remove("selected"); });
@@ -1053,9 +1066,9 @@ function tagMood(btn) {
 function injectPrompt() {
   const prompt = JOURNAL_PROMPTS[Math.floor(Math.random() * JOURNAL_PROMPTS.length)];
   const banner = document.getElementById("editorPromptBanner");
-  const text   = document.getElementById("editorPromptText");
+  const text = document.getElementById("editorPromptText");
   if (banner) banner.classList.remove("hidden");
-  if (text)   text.textContent = prompt;
+  if (text) text.textContent = prompt;
 }
 
 function hidePromptBanner() {
@@ -1065,20 +1078,20 @@ function hidePromptBanner() {
 
 function updateEditorWordCount() {
   const content = document.getElementById("editorContent")?.value || "";
-  const words   = content.trim().split(/\s+/).filter(Boolean).length;
+  const words = content.trim().split(/\s+/).filter(Boolean).length;
   setEl("editorWordCount", words + " word" + (words !== 1 ? "s" : ""));
 }
 
 async function saveJournalEntry() {
-  const date    = document.getElementById("editorDate")?.value    || todayStr();
-  const title   = document.getElementById("editorTitle")?.value.trim()   || "";
+  const date = document.getElementById("editorDate")?.value || todayStr();
+  const title = document.getElementById("editorTitle")?.value.trim() || "";
   const content = document.getElementById("editorContent")?.value.trim() || "";
-  const id      = document.getElementById("editorEntryId")?.value;
+  const id = document.getElementById("editorEntryId")?.value;
 
   if (!content) { showToast("Please write something before saving! ✍️"); return; }
 
   const entries = getJournalEntries();
-  const now     = new Date().toISOString();
+  const now = new Date().toISOString();
 
   if (id) {
     // Update existing
@@ -1089,10 +1102,10 @@ async function saveJournalEntry() {
   } else {
     // Create new
     const newEntry = {
-      id:        "j_" + Date.now(),
+      id: "j_" + Date.now(),
       title, content, date,
       moodEmoji: editorMoodTag?.emoji || "",
-      moodName:  editorMoodTag?.name  || "",
+      moodName: editorMoodTag?.name || "",
       createdAt: now, updatedAt: now,
     };
     entries.push(newEntry);
@@ -1112,7 +1125,7 @@ async function saveJournalEntry() {
   };
 
   const result = await apiRequest(id ? '/journal/' + id : '/journal', id ? 'PUT' : 'POST', payload);
-  
+
   if (result) {
     // Backend saved successfully, sync journal entries from backend
     const updatedEntries = await apiRequest('/journal', 'GET');
@@ -1147,48 +1160,48 @@ function renderCalendar(year, month) {
   const grid = document.getElementById("calendarGrid");
   if (!grid) return;
 
-  const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
   const label = document.getElementById("calMonthLabel");
   if (label) label.textContent = monthNames[month] + " " + year;
 
-  const firstDay   = new Date(year, month, 1).getDay();
-  const daysInMon  = new Date(year, month+1, 0).getDate();
-  const todayDate  = new Date();
-  const todayStr2  = todayStr();
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMon = new Date(year, month + 1, 0).getDate();
+  const todayDate = new Date();
+  const todayStr2 = todayStr();
 
-  const moods    = loadUserData("moods")         || [];
-  const entries  = loadUserData("journal")       || [];
-  const sessions = loadUserData("chatSessions")  || [];
+  const moods = loadUserData("moods") || [];
+  const entries = loadUserData("journal") || [];
+  const sessions = loadUserData("chatSessions") || [];
 
   // Build maps for quick lookup
-  const moodMap    = {};
+  const moodMap = {};
   const journalMap = {};
-  const chatMap    = {};
-  moods.forEach(function (m) { const d = m.time.slice(0,10); if (!moodMap[d]) moodMap[d] = m; });
-  entries.forEach(function (e) { const d = e.date || e.createdAt.slice(0,10); if (!journalMap[d]) journalMap[d] = e; });
-  sessions.forEach(function (s) { const d = s.createdAt.slice(0,10); chatMap[d] = (chatMap[d]||0)+1; });
+  const chatMap = {};
+  moods.forEach(function (m) { const d = m.time.slice(0, 10); if (!moodMap[d]) moodMap[d] = m; });
+  entries.forEach(function (e) { const d = e.date || e.createdAt.slice(0, 10); if (!journalMap[d]) journalMap[d] = e; });
+  sessions.forEach(function (s) { const d = s.createdAt.slice(0, 10); chatMap[d] = (chatMap[d] || 0) + 1; });
 
-  const dayNames = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   let html = dayNames.map(function (d) { return `<div class="cal-header-cell">${d}</div>`; }).join("");
 
   // Empty cells before first day
   for (let i = 0; i < firstDay; i++) html += `<div class="cal-day other-month"></div>`;
 
   for (let d = 1; d <= daysInMon; d++) {
-    const dateKey  = year + "-" + String(month+1).padStart(2,"0") + "-" + String(d).padStart(2,"0");
-    const isToday  = dateKey === todayStr2;
-    const isSel    = dateKey === selectedCalDate;
-    const hasMood  = !!moodMap[dateKey];
-    const hasJour  = !!journalMap[dateKey];
-    const hasChat  = !!chatMap[dateKey];
+    const dateKey = year + "-" + String(month + 1).padStart(2, "0") + "-" + String(d).padStart(2, "0");
+    const isToday = dateKey === todayStr2;
+    const isSel = dateKey === selectedCalDate;
+    const hasMood = !!moodMap[dateKey];
+    const hasJour = !!journalMap[dateKey];
+    const hasChat = !!chatMap[dateKey];
     const moodEmoji = hasMood ? moodMap[dateKey].emoji : "";
 
     let dots = "";
-    if (hasMood)  dots += '<div class="cal-dot mood-dot"></div>';
-    if (hasJour)  dots += '<div class="cal-dot journal-dot"></div>';
-    if (hasChat)  dots += '<div class="cal-dot chat-dot"></div>';
+    if (hasMood) dots += '<div class="cal-dot mood-dot"></div>';
+    if (hasJour) dots += '<div class="cal-dot journal-dot"></div>';
+    if (hasChat) dots += '<div class="cal-dot chat-dot"></div>';
 
-    html += `<div class="cal-day${isToday?" today":""}${isSel?" selected":""}" onclick="selectCalendarDate('${dateKey}')">
+    html += `<div class="cal-day${isToday ? " today" : ""}${isSel ? " selected" : ""}" onclick="selectCalendarDate('${dateKey}')">
       <div class="cal-day-num">${d}</div>
       <div class="cal-day-dots">${dots}</div>
       ${moodEmoji ? '<div class="cal-day-emoji">' + moodEmoji + '</div>' : ""}
@@ -1204,12 +1217,12 @@ function renderCalendar(year, month) {
 function changeCalMonth(dir) {
   calMonth += dir;
   if (calMonth > 11) { calMonth = 0; calYear++; }
-  if (calMonth < 0)  { calMonth = 11; calYear--; }
+  if (calMonth < 0) { calMonth = 11; calYear--; }
   renderCalendar(calYear, calMonth);
 }
 
 function goToToday() {
-  calYear  = new Date().getFullYear();
+  calYear = new Date().getFullYear();
   calMonth = new Date().getMonth();
   renderCalendar(calYear, calMonth);
   selectCalendarDate(todayStr());
@@ -1224,15 +1237,15 @@ function selectCalendarDate(dateKey) {
 
 function renderCalDetail(dateKey, moods, entries, sessions) {
   const dateLabel = document.getElementById("calDetailDate");
-  const body      = document.getElementById("calDetailBody");
+  const body = document.getElementById("calDetailBody");
   if (!dateLabel || !body) return;
 
   const d = new Date(dateKey + "T12:00:00");
-  dateLabel.textContent = d.toLocaleDateString("en-US", { weekday:"long", month:"long", day:"numeric" });
+  dateLabel.textContent = d.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
 
-  const dayMood  = moods.find(function (m) { return m.time.slice(0,10) === dateKey; });
-  const dayEntry = entries.find(function (e) { return (e.date || e.createdAt.slice(0,10)) === dateKey; });
-  const dayChatCount = (loadUserData("chatSessions")||[]).filter(function (s) { return s.createdAt.slice(0,10) === dateKey; }).length;
+  const dayMood = moods.find(function (m) { return m.time.slice(0, 10) === dateKey; });
+  const dayEntry = entries.find(function (e) { return (e.date || e.createdAt.slice(0, 10)) === dateKey; });
+  const dayChatCount = (loadUserData("chatSessions") || []).filter(function (s) { return s.createdAt.slice(0, 10) === dateKey; }).length;
 
   let html = "";
 
@@ -1248,7 +1261,7 @@ function renderCalDetail(dateKey, moods, entries, sessions) {
       <div class="cal-detail-section-title">Journal Entry</div>
       <div class="cal-detail-journal" onclick="openEntryFromCalendar('${dayEntry.id}')">
         <div class="cdj-title">${dayEntry.title ? escHtml(dayEntry.title) : "<em>Untitled</em>"}</div>
-        <div class="cdj-preview">${escHtml(dayEntry.content?.slice(0,80) || "")}</div>
+        <div class="cdj-preview">${escHtml(dayEntry.content?.slice(0, 80) || "")}</div>
       </div>
     </div>`;
   }
@@ -1294,9 +1307,9 @@ function switchHistTab(tab, btn) {
 }
 
 function renderChatHistory() {
-  const sessions   = loadUserData("chatSessions") || [];
-  const query      = (document.getElementById("histChatSearch")?.value || "").toLowerCase();
-  const container  = document.getElementById("chatHistoryList");
+  const sessions = loadUserData("chatSessions") || [];
+  const query = (document.getElementById("histChatSearch")?.value || "").toLowerCase();
+  const container = document.getElementById("chatHistoryList");
   if (!container) return;
 
   let filtered = sessions;
@@ -1330,27 +1343,27 @@ function renderChatHistory() {
 
 function viewChatSession(id) {
   const sessions = loadUserData("chatSessions") || [];
-  const session  = sessions.find(function (s) { return s.id === id; });
+  const session = sessions.find(function (s) { return s.id === id; });
   if (!session) return;
 
   const viewer = document.getElementById("sessionViewer");
-  const title  = document.getElementById("svTitle");
-  const meta   = document.getElementById("svMeta");
-  const msgs   = document.getElementById("svMessages");
+  const title = document.getElementById("svTitle");
+  const meta = document.getElementById("svMeta");
+  const msgs = document.getElementById("svMessages");
 
   if (!viewer || !msgs) return;
   if (title) title.textContent = session.title;
-  if (meta)  meta.textContent  = session.timeStr + " · " + (session.msgCount || 0) + " messages · " + (session.mode || "advice") + " mode";
+  if (meta) meta.textContent = session.timeStr + " · " + (session.msgCount || 0) + " messages · " + (session.mode || "advice") + " mode";
 
   msgs.innerHTML = (session.messages || []).map(function (m) {
     return `<div class="sv-msg ${m.role === "user" ? "sv-user" : "sv-ai"}">
-      <div class="sv-msg-bubble">${escHtml(m.text).replace(/\n/g,"<br/>")}</div>
+      <div class="sv-msg-bubble">${escHtml(m.text).replace(/\n/g, "<br/>")}</div>
       <div class="sv-msg-time">${m.time || ""}</div>
     </div>`;
   }).join("");
 
   viewer.classList.remove("hidden");
-  viewer.scrollIntoView({ behavior:"smooth", block:"start" });
+  viewer.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function closeSessionViewer() { document.getElementById("sessionViewer")?.classList.add("hidden"); }
@@ -1375,8 +1388,8 @@ function clearAllChatHistory() {
 }
 
 function renderActivityLog() {
-  const activity  = loadUserData("activity") || [];
-  const query     = (document.getElementById("histActivitySearch")?.value || "").toLowerCase();
+  const activity = loadUserData("activity") || [];
+  const query = (document.getElementById("histActivitySearch")?.value || "").toLowerCase();
   const container = document.getElementById("activityLogList");
   if (!container) return;
 
@@ -1388,14 +1401,14 @@ function renderActivityLog() {
     return;
   }
 
-  const typeIcons = { chat:"💬", mood:"📊", journal:"📓", other:"✦" };
+  const typeIcons = { chat: "💬", mood: "📊", journal: "📓", other: "✦" };
   container.innerHTML = filtered.map(function (a, i) {
     return `<div class="al-item">
       <div class="al-dot-col">
         <div class="al-dot type-${a.type || "other"}"></div>
         ${i < filtered.length - 1 ? '<div class="al-line"></div>' : ""}
       </div>
-      <span class="al-text">${typeIcons[a.type]||"✦"} ${escHtml(a.text)}</span>
+      <span class="al-text">${typeIcons[a.type] || "✦"} ${escHtml(a.text)}</span>
       <span class="al-time">${a.timeStr}</span>
     </div>`;
   }).join("");
@@ -1500,9 +1513,9 @@ function toggleFAQ(i) {
 function changeFontFamily(fontName, btn) {
   // Load font if not already loaded
   if (!loadedFonts.has(fontName) && FONT_URLS[fontName]) {
-    const link  = document.createElement("link");
-    link.rel    = "stylesheet";
-    link.href   = FONT_URLS[fontName];
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = FONT_URLS[fontName];
     document.head.appendChild(link);
     loadedFonts.add(fontName);
   }
@@ -1538,7 +1551,7 @@ function changeFontSize(size) {
   document.documentElement.style.setProperty("--fs", px + "px");
 
   // Update the label
-  const names = { 13:"Small", 14:"Small", 15:"Medium", 16:"Medium", 17:"Large", 18:"Large", 19:"X-Large", 20:"X-Large" };
+  const names = { 13: "Small", 14: "Small", 15: "Medium", 16: "Medium", 17: "Large", 18: "Large", 19: "X-Large", 20: "X-Large" };
   const labelEl = document.getElementById("fontSizeLabel");
   if (labelEl) labelEl.textContent = (names[px] || "Custom") + " (" + px + "px)";
 
@@ -1568,12 +1581,12 @@ function setAccent(btn) {
 
 function saveName() {
   const input = document.getElementById("displayNameInput");
-  const name  = (input?.value || "").trim();
+  const name = (input?.value || "").trim();
   if (!name || name.length < 2) { showToast("Please enter a valid name."); return; }
   state.currentUser.name = name;
   // Update stored user
   const users = getAllUsers();
-  const idx   = users.findIndex(function (u) { return u.id === state.currentUser.id; });
+  const idx = users.findIndex(function (u) { return u.id === state.currentUser.id; });
   if (idx >= 0) { users[idx].name = name; saveAllUsers(users); }
   updateUserUI(name);
   showToast("Name saved! Hi, " + name.split(" ")[0] + " 👋");
@@ -1583,7 +1596,7 @@ function saveSetting(key, value) { state.settings[key] = value; saveSettingsToSt
 
 function resetAllSettings() {
   if (!confirm("Reset all settings to defaults?")) return;
-  state.settings = { darkMode:false, fontFamily:"DM Sans", fontSize:16, accentColor:"#3CBFA0", defaultMode:"advice", showTyping:true, moodReminder:false, breathingReminder:false };
+  state.settings = { darkMode: false, fontFamily: "DM Sans", fontSize: 16, accentColor: "#3CBFA0", defaultMode: "advice", showTyping: true, moodReminder: false, breathingReminder: false };
   applySettings();
   saveSettingsToStorage();
   showToast("Settings reset to defaults.");
@@ -1643,12 +1656,12 @@ function applySettings() {
    14. ACTIVITY LOGGING
 ───────────────────────────────────────────────────── */
 
-const TYPE_ICONS = { chat:"💬", mood:"📊", journal:"📓", other:"✦" };
+const TYPE_ICONS = { chat: "💬", mood: "📊", journal: "📓", other: "✦" };
 
 function logActivity(type, text) {
   if (!state.currentUser) return;
   const activity = loadUserData("activity") || [];
-  activity.push({ type, text, icon: TYPE_ICONS[type]||"✦", time: new Date().toISOString(), timeStr: formatTime(new Date()) });
+  activity.push({ type, text, icon: TYPE_ICONS[type] || "✦", time: new Date().toISOString(), timeStr: formatTime(new Date()) });
   // Keep last 200 entries
   saveUserData("activity", activity.slice(-200));
 }
@@ -1660,22 +1673,22 @@ function logActivity(type, text) {
 ───────────────────────────────────────────────────── */
 
 // User accounts
-function getAllUsers()          { return JSON.parse(localStorage.getItem("mb_users") || "[]"); }
-function saveAllUsers(users)    { localStorage.setItem("mb_users", JSON.stringify(users)); }
-function getUserById(id)        { return getAllUsers().find(function (u) { return u.id === id; }) || null; }
+function getAllUsers() { return JSON.parse(localStorage.getItem("mb_users") || "[]"); }
+function saveAllUsers(users) { localStorage.setItem("mb_users", JSON.stringify(users)); }
+function getUserById(id) { return getAllUsers().find(function (u) { return u.id === id; }) || null; }
 
 // Session (which user is logged in)
-function saveSession(session)   { localStorage.setItem("mb_session", JSON.stringify(session)); }
-function loadSession()          { return JSON.parse(localStorage.getItem("mb_session") || "null"); }
-function clearSession()         { localStorage.removeItem("mb_session"); }
+function saveSession(session) { localStorage.setItem("mb_session", JSON.stringify(session)); }
+function loadSession() { return JSON.parse(localStorage.getItem("mb_session") || "null"); }
+function clearSession() { localStorage.removeItem("mb_session"); }
 
 // Per-user data (namespaced)
-function userKey(key)           { return "mb_" + (state.currentUser?.id || "anon") + "_" + key; }
-function loadUserData(key)      { return JSON.parse(localStorage.getItem(userKey(key)) || "null"); }
+function userKey(key) { return "mb_" + (state.currentUser?.id || "anon") + "_" + key; }
+function loadUserData(key) { return JSON.parse(localStorage.getItem(userKey(key)) || "null"); }
 function saveUserData(key, val) { localStorage.setItem(userKey(key), JSON.stringify(val)); }
 
 // Settings (global, not per-user)
-function saveSettingsToStorage()  { localStorage.setItem("mb_settings", JSON.stringify(state.settings)); }
+function saveSettingsToStorage() { localStorage.setItem("mb_settings", JSON.stringify(state.settings)); }
 function loadSettingsFromStorage() {
   try {
     const s = JSON.parse(localStorage.getItem("mb_settings") || "null");
@@ -1688,7 +1701,7 @@ function loadSettingsFromStorage() {
 ───────────────────────────────────────────────────── */
 
 // Sidebar
-function openSidebar()  { document.getElementById("sidebar")?.classList.add("open"); document.getElementById("sidebarOverlay")?.classList.add("visible"); }
+function openSidebar() { document.getElementById("sidebar")?.classList.add("open"); document.getElementById("sidebarOverlay")?.classList.add("visible"); }
 function closeSidebar() { document.getElementById("sidebar")?.classList.remove("open"); document.getElementById("sidebarOverlay")?.classList.remove("visible"); }
 
 // Toast
@@ -1702,24 +1715,24 @@ function showToast(msg, ms) {
 }
 
 // Time helpers
-function formatTime(date) { return date.toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" }); }
-function formatDateShort(date) { return date.toLocaleDateString([], { month:"short", day:"numeric", year:"numeric" }); }
+function formatTime(date) { return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); }
+function formatDateShort(date) { return date.toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" }); }
 function todayStr() {
   const d = new Date();
-  return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
 }
 
 // Streak calculator
 function calcStreak(moods) {
   if (!moods || moods.length === 0) return 0;
-  const dates = new Set(moods.map(function (m) { return m.time.slice(0,10); }));
+  const dates = new Set(moods.map(function (m) { return m.time.slice(0, 10); }));
   let streak = 0;
   const d = new Date();
   while (true) {
-    const key = d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+    const key = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
     if (!dates.has(key)) break;
     streak++;
-    d.setDate(d.getDate()-1);
+    d.setDate(d.getDate() - 1);
   }
   return streak;
 }
@@ -1730,7 +1743,7 @@ function setEl(id, val) { const el = document.getElementById(id); if (el) el.tex
 // XSS protection
 function escHtml(str) {
   if (!str) return "";
-  return String(str).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
+  return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
 
 // Email validation
@@ -1739,10 +1752,10 @@ function isValidEmail(email) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email); 
 // Simple hex color darkener
 function darken(hex, pct) {
   try {
-    hex = hex.replace("#","");
-    const r = Math.max(0, parseInt(hex.slice(0,2),16) - Math.round(255*pct/100));
-    const g = Math.max(0, parseInt(hex.slice(2,4),16) - Math.round(255*pct/100));
-    const b = Math.max(0, parseInt(hex.slice(4,6),16) - Math.round(255*pct/100));
-    return "#" + r.toString(16).padStart(2,"0") + g.toString(16).padStart(2,"0") + b.toString(16).padStart(2,"0");
+    hex = hex.replace("#", "");
+    const r = Math.max(0, parseInt(hex.slice(0, 2), 16) - Math.round(255 * pct / 100));
+    const g = Math.max(0, parseInt(hex.slice(2, 4), 16) - Math.round(255 * pct / 100));
+    const b = Math.max(0, parseInt(hex.slice(4, 6), 16) - Math.round(255 * pct / 100));
+    return "#" + r.toString(16).padStart(2, "0") + g.toString(16).padStart(2, "0") + b.toString(16).padStart(2, "0");
   } catch (e) { return hex; }
 }
