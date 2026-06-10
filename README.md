@@ -273,10 +273,6 @@ mind-bloom/
 ### Installation
 
 ```bash
-# Clone the repository
-git clone https://github.com/YOUR_USERNAME/mind-bloom.git
-cd mind-bloom/backend
-
 # Install dependencies
 npm install
 
